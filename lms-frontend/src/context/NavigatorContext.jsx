@@ -1,9 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { STORAGE_KEYS } from '../utils/constants';
-
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { capabilityGraphs } from '../data/capabilityGraphs';
 import { generatePath, replanPath } from '../engine/pathOptimizer';
 import { getResourcesForSkill } from '../data/resources';
+import { getNavigatorState, saveNavigatorState } from '../services/navigatorService';
 
 const NavigatorContext = createContext();
 
@@ -15,58 +14,111 @@ export const useNavigator = () => {
   return context;
 };
 
-export const NavigatorProvider = ({ children }) => {
-  const [state, setState] = useState({
-    paths: [],
-    activePathId: null
-  });
+// ─── Initial empty state shape ───────────────────────────────────────────────
+const EMPTY_STATE = { paths: [], activePathId: null };
+const STORAGE_KEY = 'lms_navigator_cache';
 
-  // Load from local storage
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.NAVIGATOR);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Migration logic: if old flat format, convert to multi-path format
-        if (parsed.goal && !parsed.paths) {
-          const legacyPath = {
-            id: 'path_' + Date.now(),
-            createdAt: new Date().toISOString(),
-            status: 'active',
-            goal: parsed.goal,
-            capabilityGraph: parsed.capabilityGraph,
-            learnerState: parsed.learnerState || {},
-            currentPath: parsed.currentPath || [],
-            pathStatus: parsed.pathStatus || 'planning',
-            recoveryHistory: parsed.recoveryHistory || [],
-            chatHistory: parsed.chatHistory || [],
-            canvasEdits: parsed.canvasEdits || [],
-            milestones: [],
-            notes: {},
-            totalTimeMinutes: 0,
-            lastActiveAt: new Date().toISOString()
-          };
-          setState({ paths: [legacyPath], activePathId: legacyPath.id });
-        } else {
-          setState(parsed);
-        }
-      } catch (e) {
-        console.error('Failed to parse navigator state', e);
-      }
+export const NavigatorProvider = ({ children }) => {
+  // Load from local storage initially (instant)
+  const getInitialState = () => {
+    try {
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {
+      console.warn('Failed to parse cached navigator state');
     }
+    return EMPTY_STATE;
+  };
+
+  const [state, setState] = useState(getInitialState);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const saveTimerRef = useRef(null);
+
+  // ─── Debounced save to backend on every state change ───────────────────────
+  const scheduleBackendSave = useCallback((newState) => {
+    // Instantly save to local cache
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        await saveNavigatorState(newState);
+        setLastSyncedAt(new Date());
+      } catch (err) {
+        console.warn('[Navigator] Failed to sync state to backend:', err.message);
+      }
+    }, 1500);
   }, []);
 
-  // Save to local storage on change
+  // ─── Load state from backend on mount ──────────────────────────────────────
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NAVIGATOR, JSON.stringify(state));
-  }, [state]);
+    const loadFromBackend = async () => {
+      try {
+        setIsSyncing(true);
+        const response = await getNavigatorState();
 
-  const dispatch = (action) => {
+        if (response?.stateJson) {
+          const parsed = JSON.parse(response.stateJson);
+          
+          // Protection: Don't let an empty backend wipe out a populated local cache
+          const isBackendEmpty = !parsed.paths || parsed.paths.length === 0;
+          const cached = localStorage.getItem(STORAGE_KEY);
+          const localHasData = cached && JSON.parse(cached).paths?.length > 0;
+          
+          if (isBackendEmpty && localHasData) {
+            console.log('[Navigator] Backend is empty but local cache has data. Pushing cache to backend.');
+            // Push our local data to the backend to recover it
+            scheduleBackendSave(JSON.parse(cached));
+            return;
+          }
+
+          let finalState = parsed;
+
+          // Migration: handle old single-path format
+          if (parsed.goal && !parsed.paths) {
+            const legacyPath = {
+              id: 'path_' + Date.now(),
+              createdAt: new Date().toISOString(),
+              status: 'active',
+              goal: parsed.goal,
+              capabilityGraph: parsed.capabilityGraph,
+              learnerState: parsed.learnerState || {},
+              currentPath: parsed.currentPath || [],
+              pathStatus: parsed.pathStatus || 'planning',
+              recoveryHistory: parsed.recoveryHistory || [],
+              chatHistory: parsed.chatHistory || [],
+              canvasEdits: parsed.canvasEdits || [],
+              milestones: [],
+              notes: {},
+              learningDates: [],
+              totalTimeMinutes: 0,
+              lastActiveAt: new Date().toISOString()
+            };
+            finalState = { paths: [legacyPath], activePathId: legacyPath.id };
+          }
+          
+          setState(finalState);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(finalState));
+          setLastSyncedAt(new Date());
+        }
+      } catch (err) {
+        console.warn('[Navigator] Could not load state from backend, using cache:', err.message);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    loadFromBackend();
+  }, [scheduleBackendSave]);
+
+  // ─── Dispatch function ─────────────────────────────────────────────────────
+  const dispatch = useCallback((action) => {
     setState((prevState) => {
-      // Deep copy paths array so we don't mutate state directly
       const newPaths = prevState.paths.map(p => ({ ...p }));
       let newActivePathId = prevState.activePathId;
-      
+
       const activeIdx = newPaths.findIndex(p => p.id === newActivePathId);
       const activePath = activeIdx >= 0 ? newPaths[activeIdx] : null;
 
@@ -75,18 +127,21 @@ export const NavigatorProvider = ({ children }) => {
       }
 
       switch (action.type) {
-        // ---- Global Multi-Path Actions ----
+
+        // ── Global multi-path actions ──────────────────────────────────────
         case 'SET_GOAL': {
           const goal = action.payload;
-          
-          // Check if path already exists for this goal role
-          const existingIdx = newPaths.findIndex(p => p.goal?.targetRole === goal.targetRole && p.status !== 'archived');
-          if (existingIdx >= 0 && !action.payload.forceNew) {
-             // We just switch to it (unless forceNew is set)
-             newActivePathId = newPaths[existingIdx].id;
-             break;
+
+          // If path for this role already exists and forceNew is not set → just switch to it
+          const existingIdx = newPaths.findIndex(
+            p => p.goal?.targetRole === goal.targetRole && p.status !== 'archived'
+          );
+          if (existingIdx >= 0 && !goal.forceNew) {
+            newActivePathId = newPaths[existingIdx].id;
+            break;
           }
 
+          // Build initial learner state from known skills
           const newLearnerState = {};
           if (goal.knownSkills) {
             goal.knownSkills.forEach(skill => {
@@ -98,7 +153,7 @@ export const NavigatorProvider = ({ children }) => {
               };
             });
           }
-          
+
           const capabilityGraph = capabilityGraphs[goal.targetRole];
           const newPath = {
             id: 'path_' + Date.now(),
@@ -107,17 +162,20 @@ export const NavigatorProvider = ({ children }) => {
             goal,
             capabilityGraph,
             learnerState: newLearnerState,
-            currentPath: capabilityGraph ? generatePath(goal, newLearnerState, capabilityGraph) : [],
+            currentPath: capabilityGraph
+              ? generatePath(goal, newLearnerState, capabilityGraph)
+              : [],
             pathStatus: 'planning',
             recoveryHistory: [],
             chatHistory: [],
             canvasEdits: [],
             milestones: [],
             notes: {},
+            learningDates: [],
             totalTimeMinutes: 0,
             lastActiveAt: new Date().toISOString()
           };
-          
+
           newPaths.push(newPath);
           newActivePathId = newPath.id;
           break;
@@ -132,7 +190,7 @@ export const NavigatorProvider = ({ children }) => {
           if (idx >= 0) newPaths[idx].status = 'paused';
           break;
         }
-        
+
         case 'RESUME_PATH': {
           const idx = newPaths.findIndex(p => p.id === action.payload);
           if (idx >= 0) {
@@ -151,9 +209,11 @@ export const NavigatorProvider = ({ children }) => {
         case 'DELETE_PATH': {
           const filtered = newPaths.filter(p => p.id !== action.payload);
           if (newActivePathId === action.payload) {
-             newActivePathId = filtered.length > 0 ? filtered[0].id : null;
+            newActivePathId = filtered.find(p => p.status !== 'archived')?.id || null;
           }
-          return { paths: filtered, activePathId: newActivePathId };
+          const nextState = { paths: filtered, activePathId: newActivePathId };
+          scheduleBackendSave(nextState);
+          return nextState;
         }
 
         case 'MARK_PATH_COMPLETE': {
@@ -161,38 +221,53 @@ export const NavigatorProvider = ({ children }) => {
           if (idx >= 0) newPaths[idx].status = 'completed';
           break;
         }
-        
-        case 'CLEAR_STATE':
-          return { paths: [], activePathId: null };
 
-        // ---- Active Path Actions ----
+        case 'CLEAR_STATE': {
+          const cleared = EMPTY_STATE;
+          scheduleBackendSave(cleared);
+          return cleared;
+        }
+
+        // ── Active-path actions ────────────────────────────────────────────
         default:
           if (!activePath) return prevState;
 
           switch (action.type) {
+
             case 'ADD_CHAT_MESSAGE':
               activePath.chatHistory = [...activePath.chatHistory, action.payload];
               break;
-              
+
             case 'SET_PATH_STATUS':
               activePath.pathStatus = action.payload;
               break;
-              
+
             case 'REPLAN_PATH':
               if (activePath.capabilityGraph && activePath.currentPath.length > 0) {
-                activePath.currentPath = replanPath(activePath.currentPath, activePath.learnerState, activePath.capabilityGraph);
+                activePath.currentPath = replanPath(
+                  activePath.currentPath,
+                  activePath.learnerState,
+                  activePath.capabilityGraph
+                );
               }
               break;
 
             case 'UPDATE_CONSTRAINT': {
               if (activePath.goal) {
                 activePath.goal = { ...activePath.goal, [action.payload.field]: action.payload.value };
-                if (action.payload.field === 'deadline' || action.payload.field === 'availableHoursPerWeek') {
-                   const wks = parseInt(activePath.goal.deadline) || 12;
-                   activePath.goal.totalBudgetHours = wks * (activePath.goal.availableHoursPerWeek || 10);
+                if (
+                  action.payload.field === 'deadline' ||
+                  action.payload.field === 'availableHoursPerWeek'
+                ) {
+                  const wks = parseInt(activePath.goal.deadline) || 12;
+                  activePath.goal.totalBudgetHours = wks * (activePath.goal.availableHoursPerWeek || 10);
                 }
                 if (activePath.capabilityGraph && activePath.currentPath.length > 0) {
-                  activePath.currentPath = replanPath(activePath.currentPath, activePath.learnerState, activePath.capabilityGraph);
+                  activePath.currentPath = replanPath(
+                    activePath.currentPath,
+                    activePath.learnerState,
+                    activePath.capabilityGraph
+                  );
                 }
               }
               break;
@@ -208,10 +283,12 @@ export const NavigatorProvider = ({ children }) => {
                 resolvedId = Object.keys(nodes).find(nodeId => {
                   const normalizedNode = nodeId.toLowerCase().replace(/[^a-z0-9]/g, '');
                   const normalizedLabel = (nodes[nodeId].label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-                  return normalizedNode.includes(normalizedRaw)
-                    || normalizedRaw.includes(normalizedNode)
-                    || normalizedLabel.includes(normalizedRaw)
-                    || normalizedRaw.includes(normalizedLabel);
+                  return (
+                    normalizedNode.includes(normalizedRaw) ||
+                    normalizedRaw.includes(normalizedNode) ||
+                    normalizedLabel.includes(normalizedRaw) ||
+                    normalizedRaw.includes(normalizedLabel)
+                  );
                 }) || null;
               }
 
@@ -269,11 +346,10 @@ export const NavigatorProvider = ({ children }) => {
               break;
             }
 
-            case 'REMOVE_SKILL_FROM_PATH': {
+            case 'REMOVE_SKILL_FROM_PATH':
               activePath.currentPath = activePath.currentPath.filter(n => n.skillId !== action.payload);
               break;
-            }
-            
+
             case 'UPDATE_MASTERY': {
               const { skillId, masteryScore } = action.payload;
               activePath.learnerState = {
@@ -283,11 +359,13 @@ export const NavigatorProvider = ({ children }) => {
                   skillId,
                   masteryScore,
                   evidenceLevel: 'strong',
-                  status: masteryScore >= (activePath.capabilityGraph?.nodes?.[skillId]?.masteryThreshold || 60) ? 'verified' : 'gap'
+                  status:
+                    masteryScore >= (activePath.capabilityGraph?.nodes?.[skillId]?.masteryThreshold || 60)
+                      ? 'verified'
+                      : 'gap'
                 }
               };
-              
-              // Feature: Learning Calendar Tracking
+              // Track learning date for the heatmap calendar
               const today = new Date().toISOString().split('T')[0];
               if (!activePath.learningDates) activePath.learningDates = [];
               if (!activePath.learningDates.includes(today)) {
@@ -295,14 +373,14 @@ export const NavigatorProvider = ({ children }) => {
               }
               break;
             }
-            
+
             case 'ADD_SUBTREE_TO_PATH': {
               const { nodes: newNodes } = action.payload;
               if (!newNodes || newNodes.length === 0) break;
 
               const newNodeIds = new Set(newNodes.map(n => n.id));
               const updatedGraphNodes = { ...activePath.capabilityGraph.nodes };
-              
+
               newNodes.forEach(n => {
                 updatedGraphNodes[n.id] = {
                   id: n.id,
@@ -313,19 +391,18 @@ export const NavigatorProvider = ({ children }) => {
                   masteryThreshold: 60,
                   goalRelevance: 0.75,
                   dependencyImpact: 0.5,
-                  isUserAdded: true,
+                  isUserAdded: true
                 };
               });
 
               newNodes.forEach(n => {
-                const externalPrereqs = (n.prerequisites || []).filter(pId => !newNodeIds.has(pId) && updatedGraphNodes[pId]);
+                const externalPrereqs = (n.prerequisites || []).filter(
+                  pId => !newNodeIds.has(pId) && updatedGraphNodes[pId]
+                );
                 externalPrereqs.forEach(pId => {
                   const parent = updatedGraphNodes[pId];
                   if (parent && !parent.unlocks.includes(n.id)) {
-                    updatedGraphNodes[pId] = {
-                      ...parent,
-                      unlocks: [...parent.unlocks, n.id]
-                    };
+                    updatedGraphNodes[pId] = { ...parent, unlocks: [...parent.unlocks, n.id] };
                   }
                 });
               });
@@ -349,7 +426,7 @@ export const NavigatorProvider = ({ children }) => {
                   selectedResource: null,
                   isUserAdded: true,
                   isRecovery: false,
-                  nodeRef: updatedGraphNodes[n.id],
+                  nodeRef: updatedGraphNodes[n.id]
                 }));
 
               activePath.currentPath = [...activePath.currentPath, ...additions];
@@ -372,7 +449,9 @@ export const NavigatorProvider = ({ children }) => {
                 activePath.currentPath = activePath.currentPath.map(item => {
                   const resources = getResourcesForSkill(item.skillId, action.payload);
                   if (resources && resources.length > 0) {
-                    const selectedResource = resources.find(r => r.learningStyle === activePath.goal.learningPreference) || resources[0];
+                    const selectedResource =
+                      resources.find(r => r.learningStyle === activePath.goal.learningPreference) ||
+                      resources[0];
                     return {
                       ...item,
                       selectedResource,
@@ -386,46 +465,63 @@ export const NavigatorProvider = ({ children }) => {
             }
 
             case 'TRIGGER_RECOVERY':
-               activePath.pathStatus = 'blocked';
-               break;
+              activePath.pathStatus = 'blocked';
+              break;
 
             case 'ADD_MILESTONE':
-               activePath.milestones = [...(activePath.milestones || []), action.payload];
-               break;
-               
-            case 'TOGGLE_MILESTONE': {
-               activePath.milestones = (activePath.milestones || []).map(m => 
-                 m.id === action.payload ? { ...m, isCompleted: !m.isCompleted } : m
-               );
-               break;
-            }
+              activePath.milestones = [...(activePath.milestones || []), action.payload];
+              break;
+
+            case 'TOGGLE_MILESTONE':
+              activePath.milestones = (activePath.milestones || []).map(m =>
+                m.id === action.payload ? { ...m, isCompleted: !m.isCompleted } : m
+              );
+              break;
 
             case 'ADD_SKILL_NOTE': {
-               const { skillId, note } = action.payload;
-               activePath.notes = { ...(activePath.notes || {}), [skillId]: note };
-               break;
+              const { skillId, note } = action.payload;
+              activePath.notes = { ...(activePath.notes || {}), [skillId]: note };
+              break;
             }
 
-            case 'ACCUMULATE_TIME': {
-               activePath.totalTimeMinutes = (activePath.totalTimeMinutes || 0) + action.payload;
-               break;
-            }
+            case 'ACCUMULATE_TIME':
+              activePath.totalTimeMinutes = (activePath.totalTimeMinutes || 0) + action.payload;
+              break;
 
             default:
               break;
           }
       }
 
-      return { paths: newPaths, activePathId: newActivePathId };
+      const nextState = { paths: newPaths, activePathId: newActivePathId };
+      scheduleBackendSave(nextState);
+      return nextState;
     });
-  };
+  }, [scheduleBackendSave]);
 
-  // Expose activePath fields at the root level for backwards compatibility
+  // ─── Expose activePath fields at root level for backwards compatibility ────
   const activePath = state.paths.find(p => p.id === state.activePathId) || {};
+
   const exposedState = {
-    ...activePath,
+    // Active path fields (backwards-compatible)
+    goal: activePath.goal || null,
+    capabilityGraph: activePath.capabilityGraph || null,
+    learnerState: activePath.learnerState || {},
+    currentPath: activePath.currentPath || [],
+    pathStatus: activePath.pathStatus || 'planning',
+    recoveryHistory: activePath.recoveryHistory || [],
+    chatHistory: activePath.chatHistory || [],
+    canvasEdits: activePath.canvasEdits || [],
+    milestones: activePath.milestones || [],
+    notes: activePath.notes || {},
+    learningDates: activePath.learningDates || [],
+    totalTimeMinutes: activePath.totalTimeMinutes || 0,
+    // Multi-path fields
     paths: state.paths,
-    activePathId: state.activePathId
+    activePathId: state.activePathId,
+    // Sync metadata
+    isSyncing,
+    lastSyncedAt
   };
 
   return (
