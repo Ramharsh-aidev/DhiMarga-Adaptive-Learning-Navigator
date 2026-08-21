@@ -21,7 +21,7 @@ export const generatePath = (goal, learnerState, graph) => {
     const node = graph.nodes[skillId];
     
     // Select best resource for time estimation
-    const resources = getResourcesForSkill(skillId);
+    const resources = getResourcesForSkill(skillId, goal.contentMode);
     let selectedResource = null;
     let estimatedHours = 2; // default
     
