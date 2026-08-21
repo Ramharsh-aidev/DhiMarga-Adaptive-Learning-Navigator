@@ -3,6 +3,7 @@ import { STORAGE_KEYS } from '../utils/constants';
 
 import { capabilityGraphs } from '../data/capabilityGraphs';
 import { generatePath, replanPath } from '../engine/pathOptimizer';
+import { getResourcesForSkill } from '../data/resources';
 
 const NavigatorContext = createContext();
 
@@ -107,20 +108,78 @@ export const NavigatorProvider = ({ children }) => {
         }
 
         case 'ADD_SKILL_TO_PATH': {
-          const skillId = action.payload;
-          if (newState.capabilityGraph?.nodes[skillId] && !newState.currentPath.find(n => n.skillId === skillId)) {
-            // For prototype, simply append to path and rely on replanPath to sort later if needed
-            // A true implementation would use topological sort and validate
-            newState.currentPath.push({
-              skillId,
-              order: newState.currentPath.length,
-              status: 'upcoming',
-              estimatedHours: 2,
-              selectedResource: null,
-              isUserAdded: true,
-              isRecovery: false,
-              nodeRef: newState.capabilityGraph.nodes[skillId]
-            });
+          const rawSkillId = action.payload;
+          const nodes = newState.capabilityGraph?.nodes || {};
+
+          // 1. Try exact match first
+          let resolvedId = nodes[rawSkillId] ? rawSkillId : null;
+
+          // 2. Fuzzy match: normalize both sides (lowercase, underscores) and check substring
+          if (!resolvedId) {
+            const normalizedRaw = rawSkillId.toLowerCase().replace(/[^a-z0-9]/g, '');
+            resolvedId = Object.keys(nodes).find(nodeId => {
+              const normalizedNode = nodeId.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const normalizedLabel = (nodes[nodeId].label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+              return normalizedNode.includes(normalizedRaw)
+                || normalizedRaw.includes(normalizedNode)
+                || normalizedLabel.includes(normalizedRaw)
+                || normalizedRaw.includes(normalizedLabel);
+            }) || null;
+          }
+
+          if (resolvedId) {
+            // Add known graph node if not already in path
+            if (!newState.currentPath.find(n => n.skillId === resolvedId)) {
+              newState.currentPath = [
+                ...newState.currentPath,
+                {
+                  skillId: resolvedId,
+                  order: newState.currentPath.length,
+                  status: 'upcoming',
+                  estimatedHours: nodes[resolvedId]?.estimatedHours || 3,
+                  selectedResource: null,
+                  isUserAdded: true,
+                  isRecovery: false,
+                  nodeRef: nodes[resolvedId]
+                }
+              ];
+            }
+          } else {
+            // 3. Not found in graph — add as custom skill node
+            const customId = rawSkillId.toLowerCase().replace(/\s+/g, '_');
+            const humanLabel = rawSkillId.replace(/_/g, ' ');
+            if (!newState.currentPath.find(n => n.skillId === customId)) {
+              // Also inject it into the capability graph so the mind map shows it
+              newState.capabilityGraph = {
+                ...newState.capabilityGraph,
+                nodes: {
+                  ...newState.capabilityGraph.nodes,
+                  [customId]: {
+                    id: customId,
+                    label: humanLabel,
+                    category: 'Custom',
+                    prerequisites: [],
+                    unlocks: [],
+                    masteryThreshold: 60,
+                    goalRelevance: 0.7,
+                    dependencyImpact: 0.5
+                  }
+                }
+              };
+              newState.currentPath = [
+                ...newState.currentPath,
+                {
+                  skillId: customId,
+                  order: newState.currentPath.length,
+                  status: 'upcoming',
+                  estimatedHours: 3,
+                  selectedResource: null,
+                  isUserAdded: true,
+                  isRecovery: false,
+                  nodeRef: newState.capabilityGraph.nodes[customId]
+                }
+              ];
+            }
           }
           break;
         }
@@ -139,12 +198,112 @@ export const NavigatorProvider = ({ children }) => {
               skillId,
               masteryScore,
               evidenceLevel: 'strong',
-              status: masteryScore >= (newState.capabilityGraph.nodes[skillId]?.masteryThreshold || 60) ? 'verified' : 'gap'
+              status: masteryScore >= (newState.capabilityGraph?.nodes?.[skillId]?.masteryThreshold || 60) ? 'verified' : 'gap'
             }
           };
           break;
         }
         
+        case 'ADD_SUBTREE_TO_PATH': {
+          const { nodes: newNodes } = action.payload;
+          if (!newNodes || newNodes.length === 0) break;
+
+          const newNodeIds = new Set(newNodes.map(n => n.id));
+          
+          // Step 1: Build updated graph with all new nodes injected
+          const updatedGraphNodes = { ...newState.capabilityGraph.nodes };
+          newNodes.forEach(n => {
+            updatedGraphNodes[n.id] = {
+              id: n.id,
+              label: n.label,
+              category: n.category || 'Custom',
+              prerequisites: n.prerequisites || [],
+              unlocks: n.unlocks || [],
+              masteryThreshold: 60,
+              goalRelevance: 0.75,
+              dependencyImpact: 0.5,
+              isUserAdded: true,
+            };
+          });
+
+          // Step 2: Wire backwards — for new "entry" nodes (prerequisites point to EXISTING nodes),
+          // add them to the existing node's unlocks so the mind map tree can traverse to them.
+          newNodes.forEach(n => {
+            const externalPrereqs = (n.prerequisites || []).filter(pId => !newNodeIds.has(pId) && updatedGraphNodes[pId]);
+            externalPrereqs.forEach(pId => {
+              const parent = updatedGraphNodes[pId];
+              if (parent && !parent.unlocks.includes(n.id)) {
+                updatedGraphNodes[pId] = {
+                  ...parent,
+                  unlocks: [...parent.unlocks, n.id]
+                };
+              }
+            });
+            // If no prerequisites at all, treat as root — wire from capabilityGraph root anchor
+            if ((n.prerequisites || []).length === 0) {
+              // No external wiring needed; buildDepTree picks up zero-prerequisite nodes as roots
+            }
+          });
+
+          newState.capabilityGraph = { ...newState.capabilityGraph, nodes: updatedGraphNodes };
+
+          // Step 3: Add nodes to path (topological sort — foundational nodes first)
+          const inPath = new Set(newState.currentPath.map(p => p.skillId));
+          const sorted = [...newNodes].sort((a, b) => {
+            const aHasNewDeps = (a.prerequisites || []).some(pId => newNodeIds.has(pId));
+            const bHasNewDeps = (b.prerequisites || []).some(pId => newNodeIds.has(pId));
+            return aHasNewDeps === bHasNewDeps ? 0 : aHasNewDeps ? 1 : -1;
+          });
+
+          const additions = sorted
+            .filter(n => !inPath.has(n.id))
+            .map((n, idx) => ({
+              skillId: n.id,
+              order: newState.currentPath.length + idx,
+              status: 'upcoming',
+              estimatedHours: n.estimatedHours || 3,
+              selectedResource: null,
+              isUserAdded: true,
+              isRecovery: false,
+              nodeRef: updatedGraphNodes[n.id],
+            }));
+
+          newState.currentPath = [...newState.currentPath, ...additions];
+          break;
+        }
+
+        case 'CONFIGURE_SKILL_IN_PATH': {
+          // payload: { skillId, estimatedHours }
+          const { skillId: cfgId, estimatedHours } = action.payload;
+          newState.currentPath = newState.currentPath.map(item =>
+            item.skillId === cfgId
+              ? { ...item, estimatedHours: estimatedHours ?? item.estimatedHours }
+              : item
+          );
+          break;
+        }
+
+        case 'SET_CONTENT_MODE': {
+          if (newState.goal) {
+            newState.goal = { ...newState.goal, contentMode: action.payload };
+            
+            // Re-assign resources for existing path
+            newState.currentPath = newState.currentPath.map(item => {
+              const resources = getResourcesForSkill(item.skillId, action.payload);
+              if (resources && resources.length > 0) {
+                const selectedResource = resources.find(r => r.learningStyle === newState.goal.learningPreference) || resources[0];
+                return {
+                  ...item,
+                  selectedResource,
+                  estimatedHours: selectedResource.durationMinutes / 60
+                };
+              }
+              return item;
+            });
+          }
+          break;
+        }
+
         case 'TRIGGER_RECOVERY': {
            newState.pathStatus = 'blocked';
            break;
