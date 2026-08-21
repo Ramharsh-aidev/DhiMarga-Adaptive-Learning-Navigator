@@ -16,7 +16,8 @@ import {
   GraduationCap,
   Briefcase,
   Shield,
-  Compass
+  Compass,
+  Route
 } from 'lucide-react';
 import { USER_ROLES } from '../../utils/constants';
 
@@ -50,6 +51,12 @@ const Sidebar = () => {
         label: 'AI Navigator',
         path: '/student/navigator',
         description: 'Adaptive Path'
+      },
+      {
+        icon: Route,
+        label: 'My Paths',
+        path: '/student/paths',
+        description: 'Learning Journeys'
       },
       {
         icon: Award,
