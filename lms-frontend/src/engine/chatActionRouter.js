@@ -12,13 +12,21 @@ export const routeChatAction = (intent, payload, currentState, dispatch) => {
       break;
     
     case 'ADD_SKILL':
-      // payload: { skillId }
       dispatch({ type: 'ADD_SKILL_TO_PATH', payload: payload.skillId });
+      break;
+
+    case 'ADD_SUBTREE':
+      // payload: { topic, nodes: [{id, label, category, estimatedHours, prerequisites, unlocks}] }
+      dispatch({ type: 'ADD_SUBTREE_TO_PATH', payload: payload });
       break;
       
     case 'REMOVE_SKILL':
-      // payload: { skillId }
       dispatch({ type: 'REMOVE_SKILL_FROM_PATH', payload: payload.skillId });
+      break;
+
+    case 'CONFIGURE_SKILL':
+      // payload: { skillId, estimatedHours }
+      dispatch({ type: 'CONFIGURE_SKILL_IN_PATH', payload });
       break;
       
     case 'UPDATE_CONSTRAINT':
