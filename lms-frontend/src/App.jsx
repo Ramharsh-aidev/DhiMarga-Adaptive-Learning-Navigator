@@ -31,6 +31,7 @@ import NavigatorDashboard from './pages/student/navigator/NavigatorDashboard';
 import NavigatorMap from './pages/student/navigator/NavigatorMap';
 import NavigatorRecovery from './pages/student/navigator/NavigatorRecovery';
 import NavigatorAssessment from './pages/student/navigator/NavigatorAssessment';
+import MyPaths from './pages/student/MyPaths';
 import { NavigatorProvider } from './context/NavigatorContext';
 
 // Mentor Pages
@@ -137,6 +138,14 @@ function App() {
           />
 
           {/* Navigator Routes */}
+          <Route
+            path="/student/paths"
+            element={
+              <PrivateRoute allowedRoles={[USER_ROLES.STUDENT]}>
+                <MyPaths />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/student/navigator"
             element={
