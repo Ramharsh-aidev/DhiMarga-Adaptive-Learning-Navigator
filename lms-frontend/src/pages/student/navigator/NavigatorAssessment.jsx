@@ -20,8 +20,26 @@ const NavigatorAssessment = () => {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState(null);
 
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+
   useEffect(() => {
-    setQuestions(getQuestionsForSkill(skillId));
+    const fetchQuestions = async () => {
+      setIsLoadingQuestions(true);
+      try {
+        const generated = await aiService.generateQuestions(skillId, 5);
+        if (generated && generated.length > 0) {
+          setQuestions(generated);
+        } else {
+          setQuestions(getQuestionsForSkill(skillId)); // Safe fallback
+        }
+      } catch (err) {
+        console.error('Failed to generate questions:', err);
+        setQuestions(getQuestionsForSkill(skillId));
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    };
+    fetchQuestions();
   }, [skillId]);
 
   const handleAnswer = async (isCorrect, selectedOption) => {
@@ -60,6 +78,16 @@ const NavigatorAssessment = () => {
       setIsEvaluating(false);
     }
   };
+
+  if (isLoadingQuestions) {
+    return (
+      <div className="flex flex-col items-center justify-center p-20 text-indigo-600">
+        <Loader2 className="animate-spin mb-4" size={40} />
+        <h3 className="text-xl font-medium mb-2">Crafting your questions...</h3>
+        <p className="text-gray-500">Our AI is generating a personalized assessment for you.</p>
+      </div>
+    );
+  }
 
   if (!questions.length) return <div className="p-8">Loading assessment...</div>;
 

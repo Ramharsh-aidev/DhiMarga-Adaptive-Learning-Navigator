@@ -21,7 +21,7 @@ const NavigatorGoal = () => {
       const goal = await aiService.parseGoal(input);
       
       // 2. Dispatch to context
-      dispatch({ type: 'SET_GOAL', payload: goal });
+      dispatch({ type: 'SET_GOAL', payload: { ...goal, forceNew: true } });
       
       // 3. Add initial chat message
       dispatch({
