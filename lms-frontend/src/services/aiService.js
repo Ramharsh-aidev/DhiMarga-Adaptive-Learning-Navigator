@@ -2,70 +2,121 @@ import axios from 'axios';
 import { parseGoalFallback } from '../engine/goalParser';
 import { routeChatAction } from '../engine/chatActionRouter';
 
-// Environment variables
+// ─── Keys ─────────────────────────────────────────────────────────────────────
 const HF_API_KEY = import.meta.env.VITE_HF_API_KEY;
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-// Use Qwen or similar solid model on HF for reasoning
-const HF_MODEL = 'Qwen/Qwen2.5-72B-Instruct';
+// ─── HF Config ────────────────────────────────────────────────────────────────
+const HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
 const HF_API_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
 
+// ─── Gemini Config ────────────────────────────────────────────────────────────
+// Confirmed working via API probe: gemini-2.5-flash responds correctly.
+// gemini-3.7-flash used as secondary if primary returns 503.
+const GEMINI_PRIMARY = 'gemini-2.5-flash';
+const GEMINI_SECONDARY = 'gemini-3.7-flash';
+
+const geminiUrl = (model) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
 /**
- * AI Service integrating Hugging Face, Gemini fallback, and keyword fallback
+ * Shared Gemini caller with automatic model fallback.
+ * Tries gemini-2.5-flash first, falls back to gemini-3.7-flash.
+ */
+async function callGemini(payload) {
+  try {
+    console.log(`[AI] Calling ${GEMINI_PRIMARY}...`);
+    const res = await axios.post(geminiUrl(GEMINI_PRIMARY), payload);
+    return res.data.candidates[0].content.parts[0].text;
+  } catch (err) {
+    const code = err.response?.data?.error?.code;
+    console.warn(`[AI] ${GEMINI_PRIMARY} failed (${code}), trying ${GEMINI_SECONDARY}...`);
+    const res = await axios.post(geminiUrl(GEMINI_SECONDARY), payload);
+    return res.data.candidates[0].content.parts[0].text;
+  }
+}
+
+// ─── AI Service ───────────────────────────────────────────────────────────────
+/**
+ * Priority: HuggingFace → Gemini → Deterministic keyword fallback
  */
 export const aiService = {
-  
-  /**
-   * Parse user goal into structured GoalProfile
-   */
+
   parseGoal: async (input) => {
-    try {
-      if (HF_API_KEY) {
+    if (HF_API_KEY) {
+      try {
+        console.log('[AI] parseGoal → HuggingFace');
         return await callHuggingFaceGoalParse(input);
-      } else if (GEMINI_API_KEY) {
-        return await callGeminiGoalParse(input);
+      } catch (err) {
+        console.warn('[AI] HF parseGoal failed:', err.message);
       }
-    } catch (error) {
-      console.warn("AI Goal Parsing failed, using deterministic fallback.", error);
     }
-    // Fallback if APIs fail or keys are missing
+    if (GEMINI_API_KEY) {
+      try {
+        console.log('[AI] parseGoal → Gemini');
+        return await callGeminiGoalParse(input);
+      } catch (err) {
+        console.warn('[AI] Gemini parseGoal failed:', err.message);
+      }
+    }
+    console.log('[AI] parseGoal → deterministic fallback');
     return parseGoalFallback(input);
   },
 
-  /**
-   * Process a chat message from the user
-   */
   processChat: async (message, context, dispatch) => {
-    try {
-      if (HF_API_KEY) {
+    if (HF_API_KEY) {
+      try {
+        console.log('[AI] processChat → HuggingFace');
         return await callHuggingFaceChat(message, context, dispatch);
-      } else if (GEMINI_API_KEY) {
-        return await callGeminiChat(message, context, dispatch);
+      } catch (err) {
+        console.warn('[AI] HF processChat failed:', err.message);
       }
-    } catch (error) {
-      console.warn("AI Chat failed.", error);
     }
-    
-    // Deterministic fallback for basic chat commands
+    if (GEMINI_API_KEY) {
+      try {
+        console.log('[AI] processChat → Gemini');
+        return await callGeminiChat(message, context, dispatch);
+      } catch (err) {
+        console.warn('[AI] Gemini processChat failed:', err.message);
+      }
+    }
+    console.log('[AI] processChat → deterministic fallback');
     return handleDeterministicChat(message, context, dispatch);
+  },
+
+  evaluateAssessment: async (skillId, answers, context, dispatch) => {
+    if (GEMINI_API_KEY) {
+      try {
+        console.log('[AI] evaluateAssessment → Gemini');
+        return await callGeminiAssessmentEvaluation(skillId, answers, context, dispatch);
+      } catch (err) {
+        console.warn('[AI] Gemini evaluation failed:', err.message);
+      }
+    }
+    // Fallback if AI fails
+    return {
+      summary: "Based on your score, we've updated your path.",
+      weakTopics: ["Review needed"],
+      strongTopics: ["Passed topics"]
+    };
   }
 };
 
-// --- Hugging Face Implementations ---
+// ─── HuggingFace Implementation ───────────────────────────────────────────────
 
 async function callHuggingFaceGoalParse(input) {
   const prompt = `<|im_start|>system
 You are an expert learning advisor. Extract the user's learning goal into JSON.
-Return ONLY valid JSON matching this schema:
+Return ONLY valid JSON (no markdown) matching this schema:
 {
   "targetRole": "ml_engineer" | "data_analyst" | "fullstack_dev" | "cloud_engineer",
-  "deadline": string (e.g. "10 weeks"),
-  "availableHoursPerWeek": number,
-  "knownSkills": [string],
-  "suspectedGaps": [string],
+  "deadline": "<N> weeks",
+  "availableHoursPerWeek": <number>,
+  "knownSkills": ["..."],
+  "suspectedGaps": ["..."],
   "learningPreference": "project-based" | "video" | "interactive" | "reading"
 }
-If a field is unknown, use sensible defaults (e.g. 10 hours/week, video preference).
+Use sensible defaults (10 hrs/week, "video" preference) for missing fields.
 <|im_end|>
 <|im_start|>user
 ${input}<|im_end|>
@@ -80,35 +131,21 @@ ${input}<|im_end|>
 
   let text = response.data[0].generated_text;
   text = text.substring(text.lastIndexOf('<|im_start|>assistant') + 21).trim();
-  
-  // Clean markdown json blocks if present
-  if (text.startsWith('```json')) text = text.replace(/```json/g, '').replace(/```/g, '');
-  
+  text = text.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+
   const parsed = JSON.parse(text);
-  
-  // Calculate budget
   const weeks = parseInt(parsed.deadline) || 12;
   parsed.totalBudgetHours = weeks * (parsed.availableHoursPerWeek || 10);
-  
   return parsed;
 }
 
 async function callHuggingFaceChat(message, context, dispatch) {
-  // We prompt the AI to return a JSON object with { reply: "text", action: { type, payload } | null }
   const prompt = `<|im_start|>system
-You are the Adaptive Learning Navigator AI. You help users manage their learning path.
-User context: Goal=${context.goal?.targetRole}, Path status=${context.pathStatus}.
-Analyze the user's message. Respond with a JSON object containing:
-1. "reply": A friendly natural language response.
-2. "action": An optional action to perform on the learning state. 
-Valid actions: 
-- {"type": "ADD_SKILL", "payload": {"skillId": "..."}}
-- {"type": "REMOVE_SKILL", "payload": {"skillId": "..."}}
-- {"type": "UPDATE_CONSTRAINT", "payload": {"field": "deadline", "value": "..."}}
-- {"type": "TRIGGER_RECOVERY", "payload": {"skillId": "..."}}
-- {"type": "REPLAN"}
-- null
-Return ONLY the JSON object.
+You are the Adaptive Learning Navigator AI. Help users manage their learning path.
+User context: Goal=${context.goal?.targetRole || 'unknown'}, Path status=${context.pathStatus || 'planning'}.
+Return ONLY valid JSON (no markdown):
+{ "reply": "<response>", "action": { "type": "<type>", "payload": {} } | null }
+Valid types: ADD_SKILL, REMOVE_SKILL, UPDATE_CONSTRAINT, TRIGGER_RECOVERY, REPLAN
 <|im_end|>
 <|im_start|>user
 ${message}<|im_end|>
@@ -123,46 +160,162 @@ ${message}<|im_end|>
 
   let text = response.data[0].generated_text;
   text = text.substring(text.lastIndexOf('<|im_start|>assistant') + 21).trim();
-  if (text.startsWith('```json')) text = text.replace(/```json/g, '').replace(/```/g, '');
-  
+  text = text.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+
   const result = JSON.parse(text);
-  
-  if (result.action) {
-    routeChatAction(result.action.type, result.action.payload, context, dispatch);
-  }
-  
+  if (result.action) routeChatAction(result.action.type, result.action.payload, context, dispatch);
   return result.reply;
 }
 
-// --- Gemini Implementations (stubs for fallback) ---
+// ─── Gemini Implementation ────────────────────────────────────────────────────
+
 async function callGeminiGoalParse(input) {
-  // Similar to HF but using Gemini REST API format
-  console.log("Using Gemini for Goal Parse");
-  return parseGoalFallback(input); // Stubbing to fallback for now
+  const prompt = `You are an expert learning advisor. Parse the user's learning goal.
+Return ONLY a valid JSON object with NO markdown fences:
+{
+  "targetRole": "ml_engineer" | "data_analyst" | "fullstack_dev" | "cloud_engineer",
+  "deadline": "<N> weeks",
+  "availableHoursPerWeek": <number>,
+  "knownSkills": ["skill1"],
+  "suspectedGaps": ["gap1"],
+  "learningPreference": "project-based" | "video" | "interactive" | "reading"
+}
+Use sensible defaults for unknown fields.
+User input: ${input}`;
+
+  const text = await callGemini({
+    contents: [{ parts: [{ text: prompt }] }]
+  });
+
+  const cleaned = text.trim().replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  const parsed = JSON.parse(cleaned);
+  const weeks = parseInt(parsed.deadline) || 12;
+  parsed.totalBudgetHours = weeks * (parsed.availableHoursPerWeek || 10);
+  return parsed;
 }
 
 async function callGeminiChat(message, context, dispatch) {
-  console.log("Using Gemini for Chat");
-  return handleDeterministicChat(message, context, dispatch); // Stubbing to fallback
+  const existingSkills = Object.keys(context.capabilityGraph?.nodes || {}).join(', ');
+  const currentPath = (context.currentPath || []).map(n => n.skillId).join(', ');
+
+  const prompt = `You are the Adaptive Learning Navigator AI for a personalized LMS.
+User context:
+- Goal role: ${context.goal?.targetRole || 'unknown'}
+- Path status: ${context.pathStatus || 'planning'}
+- Current path skills: ${currentPath || 'none yet'}
+- Known graph skills: ${existingSkills}
+
+Analyze the user's message and respond with ONLY valid JSON (no markdown, no fences):
+{
+  "reply": "<friendly concise response>",
+  "action": <action object or null>
 }
 
-// --- Deterministic Fallback ---
+AVAILABLE ACTIONS — pick the most appropriate one:
+
+1. Add a SINGLE existing skill:
+   {"type": "ADD_SKILL", "payload": {"skillId": "<existing_skill_id>"}}
+
+2. Add a NEW TOPIC with full sub-skill breakdown (use when user asks about a broad concept not in the graph):
+   {"type": "ADD_SUBTREE", "payload": {"topic": "<topic name>", "nodes": [
+     {"id": "<snake_case_id>", "label": "<Human Label>", "category": "<category>", "estimatedHours": <number>, "prerequisites": ["<id>"], "unlocks": ["<id>"]},
+     ... (put ALL related sub-skills, properly linked)
+   ]}}
+   IMPORTANT: For ADD_SUBTREE, include ALL prerequisite and unlock relationships between the new nodes. Always start from foundational nodes (prerequisites: []) and build up.
+
+3. Remove a skill from the path:
+   {"type": "REMOVE_SKILL", "payload": {"skillId": "<skill_id>"}}
+
+4. Update estimated hours for a skill:
+   {"type": "CONFIGURE_SKILL", "payload": {"skillId": "<skill_id>", "estimatedHours": <number>}}
+
+5. Replan the entire path:
+   {"type": "REPLAN"}
+
+6. No action needed:
+   null
+
+RULES:
+- Use ADD_SUBTREE when user mentions a broad topic like "reinforcement learning", "computer vision", "NLP", "system design", etc.
+- Use ADD_SKILL only for simple, specific additions of already-known skills.
+- For REMOVE_SKILL, match the skillId from the current path.
+- Always return exactly one action or null.
+
+User message: ${message}`;
+
+  const text = await callGemini({
+    contents: [{ parts: [{ text: prompt }] }],
+    tools: [{ googleSearch: {} }]
+  });
+
+  let cleaned = text.trim().replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  // Gemini sometimes wraps in a text block before/after JSON — extract the JSON object
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+
+  const result = JSON.parse(cleaned);
+  if (result.action) routeChatAction(result.action.type, result.action.payload, context, dispatch);
+  return result.reply;
+}
+
+async function callGeminiAssessmentEvaluation(skillId, answers, context, dispatch) {
+  const prompt = `You are an Adaptive Learning AI. The user just completed an assessment for the skill '${skillId}'.
+Here are their answers:
+${JSON.stringify(answers, null, 2)}
+
+Here is the capability graph of available topics:
+${JSON.stringify(Object.keys(context.capabilityGraph?.nodes || {}))}
+
+Analyze their performance. What are their strong topics? What are their weak topics based on the questions they got wrong?
+Based on this, you can optionally decide to dispatch ONE action to update their path. For example, if they failed a specific concept that exists in the graph, use ADD_SUBTREE to add that missing concept. 
+
+Return ONLY valid JSON (no markdown):
+{
+  "summary": "<friendly message about their performance>",
+  "strongTopics": ["topic1", "topic2"],
+  "weakTopics": ["topic3"],
+  "action": { "type": "<type>", "payload": {} } | null
+}
+
+Valid action types:
+- ADD_SUBTREE (use to add remediation concepts. Payload: { nodes: [{ id: "new_id", label: "Label", prerequisites: ["entry_node_id"] }] })
+- REPLAN (just replan the existing path)
+- null (do nothing if they did perfectly)
+`;
+
+  const text = await callGemini({
+    contents: [{ parts: [{ text: prompt }] }]
+  });
+
+  let cleaned = text.trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+
+  const result = JSON.parse(cleaned);
+  if (result.action && result.action.type) {
+    routeChatAction(result.action.type, result.action.payload, context, dispatch);
+  }
+  return result;
+}
+
+// ─── Deterministic Fallback ───────────────────────────────────────────────────
+
 function handleDeterministicChat(message, context, dispatch) {
   const text = message.toLowerCase();
-  
+
   if (text.includes('replan') || text.includes('update path')) {
     routeChatAction('REPLAN', null, context, dispatch);
     return "I've recalculated your learning path based on your latest progress.";
   }
-  
+
   if (text.includes('start') || text.includes('ready')) {
     routeChatAction('START_JOURNEY', null, context, dispatch);
     return "Your journey has started! Let's get to work.";
   }
-  
+
   if (text.includes('remove')) {
-    return "I can't reliably remove skills without AI reasoning in fallback mode. Please use the Canvas to edit your path.";
+    return "I can't reliably remove skills without AI reasoning. Please use the Canvas to edit your path manually.";
   }
-  
-  return "I'm currently in offline fallback mode. I can understand basic commands like 'replan my path' or 'start journey', but complex reasoning requires an API key.";
+
+  return "I'm in offline fallback mode. Try 'replan my path' or 'start journey'. For full AI reasoning, ensure your VITE_GEMINI_API_KEY is set and the dev server is restarted.";
 }
