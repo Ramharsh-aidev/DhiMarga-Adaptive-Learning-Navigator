@@ -16,7 +16,7 @@ const QuizQuestion = ({ question, onAnswer }) => {
     
     const isCorrect = selected === question.correctAnswer;
     setTimeout(() => {
-      onAnswer(isCorrect);
+      onAnswer(isCorrect, selected);
     }, 1500);
   };
 
