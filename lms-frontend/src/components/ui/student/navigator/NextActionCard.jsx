@@ -1,48 +1,110 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Play } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Play, FastForward, Video, FileText, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const NextActionCard = ({ currentNode, onStart }) => {
+const NextActionCard = ({ currentNode, onStart, onSkip }) => {
   if (!currentNode) return null;
 
   return (
-    <div className="bg-linear-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
-      {/* Decorative background circles */}
-      <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-10 blur-2xl"></div>
-      <div className="absolute bottom-0 right-16 -mb-10 w-24 h-24 rounded-full bg-white opacity-10 blur-xl"></div>
-      
-      <div className="relative z-10 flex justify-between items-center">
-        <div className="flex-1 mr-4">
-          <h3 className="text-indigo-100 text-sm font-medium mb-1">Up Next</h3>
-          <h2 className="text-2xl font-bold mb-2">{currentNode.nodeRef?.label || currentNode.skillId}</h2>
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="bg-white border border-slate-200 rounded-3xl p-1 overflow-hidden shadow-xl shadow-violet-500/5"
+    >
+      <div className="bg-linear-to-br from-violet-50 to-purple-50 rounded-[22px] p-8 sm:p-10 relative overflow-hidden">
+        
+        {/* Decorative background vectors */}
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white opacity-40 blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 right-32 -mb-20 w-48 h-48 rounded-full bg-violet-200 opacity-20 blur-2xl pointer-events-none"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:justify-between items-start md:items-center gap-8">
           
-          <div className="flex flex-col gap-2">
-            <p className="text-indigo-100 text-sm max-w-md line-clamp-2">
-              {currentNode.selectedResource?.title || 'Proceed to the next module in your personalized path.'}
+          <div className="flex-1 max-w-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="bg-white text-violet-600 text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-sm border border-violet-100">
+                Up Next
+              </span>
+              <span className="text-slate-500 text-sm font-medium flex items-center gap-1">
+                <ClockIcon /> ~{Math.round(currentNode.estimatedHours || 3)}h Focus
+              </span>
+            </div>
+            
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight leading-tight">
+              {currentNode.nodeRef?.label || currentNode.skillId}
+            </h2>
+            
+            <p className="text-slate-600 text-base sm:text-lg max-w-xl leading-relaxed mb-6">
+              {currentNode.selectedResource?.title || 'Master this topic to continue advancing on your personalized learning journey. Ready to dive in?'}
             </p>
-            {currentNode.selectedResource?.url && (
-              <a 
-                href={currentNode.selectedResource.url} 
-                target="_blank" 
-                rel="noreferrer"
-                className="text-xs font-semibold bg-white/20 hover:bg-white/30 text-white py-1 px-3 rounded-full w-fit flex items-center gap-1 transition-colors"
-                onClick={(e) => e.stopPropagation()}
+            
+            <div className="flex flex-wrap items-center gap-3">
+              {currentNode.selectedResource?.url && (
+                <motion.a 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  href={currentNode.selectedResource.url} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="bg-white border border-slate-200 text-slate-700 hover:text-violet-600 hover:border-violet-200 py-2.5 px-5 rounded-xl font-bold flex items-center gap-2 transition-colors shadow-sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Video size={18} /> Watch Lecture
+                </motion.a>
+              )}
+              {currentNode.selectedResource?.docsUrl && (
+                <motion.a 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  href={currentNode.selectedResource.docsUrl} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="bg-white border border-slate-200 text-slate-700 hover:text-violet-600 hover:border-violet-200 py-2.5 px-5 rounded-xl font-bold flex items-center gap-2 transition-colors shadow-sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <FileText size={18} /> Read Docs
+                </motion.a>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-center gap-4 w-full md:w-auto mt-4 md:mt-0 bg-white/60 p-6 rounded-2xl border border-white backdrop-blur-md shadow-sm">
+            <p className="text-sm text-slate-600 font-bold text-center mb-1">
+              Ready for the test?
+            </p>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onStart}
+              className="w-20 h-20 bg-linear-to-r from-violet-600 via-purple-500 to-pink-500 text-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.3)] hover:shadow-[0_8px_40px_rgba(124,58,237,0.5)] transition-shadow shrink-0 group"
+              title="Start Assessment"
+            >
+              <Play size={32} className="ml-2 group-hover:text-violet-100 transition-colors" fill="currentColor" />
+            </motion.button>
+            
+            {onSkip && (
+              <button 
+                onClick={onSkip}
+                className="mt-2 text-slate-500 hover:text-violet-600 text-sm font-bold flex items-center gap-1.5 transition-colors px-4 py-2 rounded-lg hover:bg-violet-50"
+                title="I already know this"
               >
-                View Material
-              </a>
+                <CheckCircle2 size={16} /> Mark as Known
+              </button>
             )}
           </div>
+
         </div>
-        
-        <button 
-          onClick={onStart}
-          className="w-14 h-14 bg-white text-indigo-600 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform shrink-0"
-        >
-          <Play size={24} className="ml-1" />
-        </button>
       </div>
-    </div>
+    </motion.div>
   );
 };
+
+const ClockIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <polyline points="12 6 12 12 16 14"></polyline>
+  </svg>
+);
 
 export default NextActionCard;

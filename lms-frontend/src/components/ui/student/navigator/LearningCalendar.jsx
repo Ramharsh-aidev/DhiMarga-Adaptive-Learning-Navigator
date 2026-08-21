@@ -42,13 +42,13 @@ const LearningCalendar = ({ path }) => {
   }, [learningDates]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 text-gray-800 font-semibold">
-          <CalendarIcon size={18} className="text-indigo-600" />
+        <div className="flex items-center gap-2 text-slate-800 font-bold">
+          <CalendarIcon size={18} className="text-violet-600" />
           <h3>Learning Consistency</h3>
         </div>
-        <span className="text-xs font-medium bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full">
+        <span className="text-xs font-bold bg-violet-50 text-violet-700 px-2 py-1 rounded-full border border-violet-100">
           {totalDays} Active Days
         </span>
       </div>
@@ -64,7 +64,7 @@ const LearningCalendar = ({ path }) => {
                   day.isFuture 
                     ? 'bg-transparent' 
                     : day.isActive 
-                      ? 'bg-indigo-500 shadow-[0_0_4px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400' 
+                      ? 'bg-violet-500 shadow-[0_0_4px_rgba(124,58,237,0.5)] ring-1 ring-violet-400' 
                       : 'bg-slate-100 border border-slate-200'
                 }`}
               />
@@ -72,12 +72,12 @@ const LearningCalendar = ({ path }) => {
           </div>
         ))}
       </div>
-      <div className="mt-2 text-xs text-slate-400 flex justify-end items-center gap-2">
+      <div className="mt-2 text-xs text-slate-400 flex justify-end items-center gap-2 font-medium">
         <span>Less</span>
         <div className="flex gap-1">
           <div className="w-3.5 h-3.5 bg-slate-100 rounded-sm"></div>
-          <div className="w-3.5 h-3.5 bg-indigo-300 rounded-sm"></div>
-          <div className="w-3.5 h-3.5 bg-indigo-500 rounded-sm"></div>
+          <div className="w-3.5 h-3.5 bg-violet-300 rounded-sm"></div>
+          <div className="w-3.5 h-3.5 bg-violet-500 rounded-sm"></div>
         </div>
         <span>More</span>
       </div>
