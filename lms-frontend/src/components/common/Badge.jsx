@@ -10,12 +10,12 @@ const Badge = ({
   className = ''
 }) => {
   const variants = {
-    primary: 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 border border-indigo-200',
-    success: 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200',
-    warning: 'bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-700 border border-orange-200',
-    danger: 'bg-gradient-to-r from-red-100 to-pink-100 text-red-700 border border-red-200',
-    info: 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 border border-blue-200',
-    neutral: 'bg-gray-100 text-gray-700 border border-gray-200'
+    primary: 'bg-linear-to-r from-violet-100 to-purple-100 text-violet-700 border border-violet-200',
+    success: 'bg-linear-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200',
+    warning: 'bg-linear-to-r from-yellow-100 to-amber-100 text-amber-700 border border-amber-200',
+    danger: 'bg-linear-to-r from-rose-100 to-pink-100 text-rose-700 border border-rose-200',
+    info: 'bg-linear-to-r from-violet-50 to-purple-50 text-violet-700 border border-violet-200',
+    neutral: 'bg-slate-100 text-slate-700 border border-slate-200'
   };
 
   const sizes = {
@@ -44,11 +44,11 @@ const Badge = ({
           className={`
             absolute -inset-1 ${rounded ? 'rounded-full' : 'rounded-lg'}
             opacity-75
-            ${variant === 'primary' ? 'bg-indigo-400' : ''}
+            ${variant === 'primary' ? 'bg-violet-400' : ''}
             ${variant === 'success' ? 'bg-green-400' : ''}
-            ${variant === 'warning' ? 'bg-orange-400' : ''}
-            ${variant === 'danger' ? 'bg-red-400' : ''}
-            ${variant === 'info' ? 'bg-blue-400' : ''}
+            ${variant === 'warning' ? 'bg-amber-400' : ''}
+            ${variant === 'danger' ? 'bg-rose-400' : ''}
+            ${variant === 'info' ? 'bg-violet-400' : ''}
           `}
           animate={{
             scale: [1, 1.2, 1],

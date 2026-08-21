@@ -14,16 +14,16 @@ const CourseCard = ({ course, index }) => {
       <Card hover className="group">
         <div className="flex gap-4">
           {/* Thumbnail */}
-          <div className="w-16 h-16 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl shadow-lg shrink-0">
+          <div className="w-16 h-16 rounded-xl bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-3xl shadow-[0_4px_12px_rgba(124,58,237,0.3)] shrink-0">
             {course.thumbnail}
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-900 mb-1 truncate">
+            <h4 className="font-bold text-slate-900 mb-1 truncate">
               {course.title}
             </h4>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+            <div className="flex items-center gap-2 text-sm text-slate-500 font-medium mb-3">
               <span>{course.chaptersCompleted}/{course.totalChapters} chapters</span>
               <span>•</span>
               <div className="flex items-center gap-1">

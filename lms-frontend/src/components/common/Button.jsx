@@ -17,11 +17,11 @@ const Button = ({
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
-    primary: 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/60 focus:ring-indigo-500/50',
-    secondary: 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/50 hover:shadow-xl hover:shadow-purple-500/60 focus:ring-purple-500/50',
-    outline: 'border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-700 hover:text-indigo-700 focus:ring-indigo-500/30',
-    ghost: 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 focus:ring-indigo-500/30',
-    danger: 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white shadow-lg shadow-red-500/50 hover:shadow-xl hover:shadow-red-500/60 focus:ring-red-500/50'
+    primary: 'bg-linear-to-r from-violet-600 via-purple-500 to-pink-500 hover:from-violet-700 hover:via-purple-600 hover:to-pink-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 focus:ring-violet-500/50',
+    secondary: 'bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 focus:ring-purple-500/50',
+    outline: 'border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 hover:text-violet-700 focus:ring-violet-500/30',
+    ghost: 'text-violet-600 hover:bg-violet-50 hover:text-violet-700 focus:ring-violet-500/30',
+    danger: 'bg-linear-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 text-white shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 focus:ring-rose-500/50'
   };
 
   const sizes = {

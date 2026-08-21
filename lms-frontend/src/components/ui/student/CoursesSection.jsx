@@ -9,8 +9,8 @@ const CoursesSection = ({ courses, onCourseClick, onViewAll }) => {
     <Card padding="lg">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Continue Learning</h2>
-          <p className="text-sm text-gray-500">Pick up where you left off</p>
+          <h2 className="text-xl font-bold text-slate-900">Continue Learning</h2>
+          <p className="text-sm text-slate-500 font-medium mt-1">Pick up where you left off</p>
         </div>
         {courses.length > 0 && (
           <Button 
