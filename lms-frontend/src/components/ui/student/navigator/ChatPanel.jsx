@@ -59,20 +59,20 @@ const ChatPanel = ({ isOpen, onClose }) => {
           className="fixed top-0 right-0 w-96 h-screen bg-white/95 backdrop-blur-xl border-l border-gray-200 shadow-2xl flex flex-col z-50"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-linear-to-r from-indigo-50 to-purple-50">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-linear-to-r from-violet-50 to-purple-50">
             <div className="flex items-center gap-2">
-              <MessageSquare className="text-indigo-600" size={20} />
-              <h3 className="font-semibold text-gray-800">AI Navigator</h3>
+              <MessageSquare className="text-violet-600" size={20} />
+              <h3 className="font-bold text-slate-800">AI Navigator</h3>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-white rounded-full text-gray-500 transition-colors">
+            <button onClick={onClose} className="p-1 hover:bg-white rounded-full text-slate-500 transition-colors">
               <X size={20} />
             </button>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
+          <div className="flex-1 overflow-y-auto p-4 bg-slate-50/50">
             {state.chatHistory.length === 0 ? (
-              <div className="text-center text-gray-500 mt-10 text-sm">
+              <div className="text-center text-slate-500 mt-10 text-sm font-medium">
                 <p>Hello! I'm your AI learning assistant.</p>
                 <p className="mt-2">Ask me to modify your plan, explain a requirement, or update your schedule.</p>
               </div>
@@ -83,7 +83,7 @@ const ChatPanel = ({ isOpen, onClose }) => {
             )}
             
             {isTyping && (
-              <div className="flex items-center gap-2 text-gray-400 text-sm p-2">
+              <div className="flex items-center gap-2 text-slate-400 text-sm p-2 font-medium">
                 <Loader2 size={16} className="animate-spin" />
                 <span>AI is thinking...</span>
               </div>
@@ -92,20 +92,20 @@ const ChatPanel = ({ isOpen, onClose }) => {
           </div>
 
           {/* Input */}
-          <form onSubmit={handleSend} className="p-4 bg-white border-t border-gray-100">
+          <form onSubmit={handleSend} className="p-4 bg-white border-t border-slate-100">
             <div className="relative flex items-center">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Type a request..."
-                className="w-full pl-4 pr-12 py-3 bg-gray-100 border-transparent rounded-full text-sm focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 transition-all outline-hidden"
+                className="w-full pl-4 pr-12 py-3 bg-slate-100 border-transparent rounded-full text-sm font-medium focus:bg-white focus:border-violet-300 focus:ring-2 focus:ring-violet-100 transition-all outline-hidden text-slate-800 placeholder:text-slate-400"
                 disabled={isTyping}
               />
               <button 
                 type="submit" 
                 disabled={!input.trim() || isTyping}
-                className="absolute right-2 p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 transition-colors"
+                className="absolute right-2 p-2 bg-linear-to-br from-violet-600 to-purple-600 text-white rounded-full hover:shadow-md hover:shadow-violet-500/30 disabled:opacity-50 disabled:shadow-none transition-all"
               >
                 <Send size={16} />
               </button>

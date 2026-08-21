@@ -46,7 +46,7 @@ const NavigatorSummaryWidget = () => {
   const { progressPercentage, completedSkills, totalSkills, weakSkills, nextSkill } = stats;
 
   return (
-    <div className="mb-8 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+    <div className="mb-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
       <div className="p-6 md:p-8">
         <div className="flex flex-col lg:flex-row gap-8 items-center">
           
@@ -59,7 +59,7 @@ const NavigatorSummaryWidget = () => {
                   cx="50"
                   cy="50"
                   r="45"
-                  className="stroke-gray-100"
+                  className="stroke-slate-100"
                   strokeWidth="10"
                   fill="none"
                 />
@@ -67,7 +67,7 @@ const NavigatorSummaryWidget = () => {
                   cx="50"
                   cy="50"
                   r="45"
-                  className="stroke-indigo-600 transition-all duration-1000 ease-out"
+                  className="stroke-violet-600 transition-all duration-1000 ease-out"
                   strokeWidth="10"
                   fill="none"
                   strokeLinecap="round"
@@ -75,26 +75,26 @@ const NavigatorSummaryWidget = () => {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-bold text-gray-900">{progressPercentage}%</span>
+                <span className="text-2xl font-bold text-slate-900">{progressPercentage}%</span>
               </div>
             </div>
 
             <div>
-              <div className="flex items-center gap-2 text-indigo-600 font-semibold mb-1">
+              <div className="flex items-center gap-2 text-violet-600 font-bold mb-1">
                 <Compass size={20} />
                 <span>AI Navigator</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              <h3 className="text-2xl font-extrabold text-slate-900 mb-2">
                 {state.goal.targetRole.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
               </h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-slate-500 mb-4 font-medium">
                 {completedSkills} of {totalSkills} skills mastered
               </p>
               
               <div className="flex gap-3">
                 <button 
                   onClick={() => navigate(state.pathStatus === 'planning' ? '/student/navigator/plan' : '/student/navigator/dashboard')}
-                  className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                  className="px-5 py-2.5 bg-linear-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-violet-500/20 transition-all flex items-center gap-2"
                 >
                   {state.pathStatus === 'planning' ? 'View Plan' : 'Continue Journey'}
                   <ArrowRight size={18} />
@@ -104,35 +104,35 @@ const NavigatorSummaryWidget = () => {
           </div>
 
           {/* Divider */}
-          <div className="hidden lg:block w-px h-32 bg-gray-200"></div>
+          <div className="hidden lg:block w-px h-32 bg-slate-200"></div>
 
           {/* Dynamic Content */}
           <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
             
             <div className="flex flex-col justify-center">
               {nextSkill ? (
-                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-                  <div className="flex items-center gap-2 text-blue-800 font-medium mb-1">
+                <div className="bg-violet-50 border border-violet-100 p-4 rounded-xl">
+                  <div className="flex items-center gap-2 text-violet-800 font-bold mb-1">
                     <Target size={16} />
                     <h4>Up Next</h4>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900 truncate">{nextSkill.label}</p>
-                  <p className="text-xs text-blue-600 mt-1">Ready to learn</p>
+                  <p className="text-sm font-bold text-slate-900 truncate">{nextSkill.label}</p>
+                  <p className="text-xs text-violet-600 mt-1 font-medium">Ready to learn</p>
                 </div>
               ) : (
                 <div className="bg-green-50 border border-green-100 p-4 rounded-xl">
-                  <div className="flex items-center gap-2 text-green-800 font-medium mb-1">
+                  <div className="flex items-center gap-2 text-green-800 font-bold mb-1">
                     <Target size={16} />
                     <h4>Goal Reached</h4>
                   </div>
-                  <p className="text-sm text-green-700 mt-1">You have mastered this path!</p>
+                  <p className="text-sm text-green-700 mt-1 font-medium">You have mastered this path!</p>
                 </div>
               )}
 
               {weakSkills.length > 0 && (
-                <div className="mt-3 flex items-start gap-2 text-orange-600 bg-orange-50 p-2.5 rounded-lg border border-orange-100">
+                <div className="mt-3 flex items-start gap-2 text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-100">
                   <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  <p className="text-xs font-medium">
+                  <p className="text-xs font-bold">
                     Review needed: {weakSkills.slice(0,2).map(s => s.label).join(', ')}
                     {weakSkills.length > 2 ? ` +${weakSkills.length - 2} more` : ''}
                   </p>
