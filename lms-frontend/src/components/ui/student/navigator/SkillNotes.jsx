@@ -37,11 +37,11 @@ const SkillNotes = ({ path }) => {
   if (currentPath.length === 0) return null;
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 shadow-sm relative overflow-hidden">
+    <div className="bg-amber-50/50 border border-amber-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
       {/* Decorative fold */}
-      <div className="absolute top-0 right-0 w-8 h-8 bg-amber-100 border-l border-b border-amber-200 rounded-bl-lg transform origin-top-right"></div>
+      <div className="absolute top-0 right-0 w-8 h-8 bg-amber-100 border-l border-b border-amber-200 rounded-bl-xl transform origin-top-right shadow-sm"></div>
       
-      <div className="flex items-center gap-2 text-amber-800 font-semibold mb-4">
+      <div className="flex items-center gap-2 text-amber-900 font-bold mb-4">
         <StickyNote size={18} />
         <h3>Skill Notes</h3>
       </div>
@@ -50,7 +50,7 @@ const SkillNotes = ({ path }) => {
         <select 
           value={activeSkillId || ''} 
           onChange={(e) => setActiveSkillId(e.target.value)}
-          className="w-full text-sm bg-white/50 border border-amber-300 rounded-md p-2 text-amber-900 outline-hidden focus:ring-1 focus:ring-amber-500 font-medium"
+          className="w-full text-sm bg-white/60 border border-amber-200 rounded-lg p-2 text-amber-900 outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold shadow-sm transition-all"
         >
           {currentPath.map(node => (
             <option key={node.skillId} value={node.skillId}>{node.label}</option>
@@ -58,24 +58,24 @@ const SkillNotes = ({ path }) => {
         </select>
       </div>
 
-      <div className="relative">
+      <div className="relative mt-2">
         <textarea
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="Add personal notes, helpful links, or reminders for this topic..."
-          className="w-full h-32 bg-transparent border-none resize-none outline-hidden text-sm text-amber-900 placeholder-amber-700/50 p-1"
+          className="w-full h-32 bg-transparent border-none resize-none outline-hidden text-sm text-amber-900 placeholder-amber-700/50 p-1 font-medium"
         />
         
         <div className="absolute bottom-0 right-0">
           <button 
             onClick={handleSave}
             disabled={noteText === (notes[activeSkillId] || '')}
-            className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-all ${
+            className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${
               isSaving 
                 ? 'bg-green-100 text-green-700' 
                 : noteText !== (notes[activeSkillId] || '')
-                  ? 'bg-amber-200 text-amber-800 hover:bg-amber-300'
-                  : 'text-amber-600 opacity-50 cursor-default'
+                  ? 'bg-amber-200 text-amber-800 hover:bg-amber-300 shadow-sm'
+                  : 'text-amber-600/50 opacity-50 cursor-default'
             }`}
           >
             {isSaving ? <Check size={14} /> : 'Save'}

@@ -95,8 +95,8 @@ const SkillRadarChart = ({ path, width = 300, height = 300 }) => {
         {/* Data Polygon */}
         <polygon
           points={polygonPoints}
-          fill="rgba(99, 102, 241, 0.2)"
-          stroke="#4f46e5"
+          fill="rgba(124, 58, 237, 0.2)"
+          stroke="#7c3aed"
           strokeWidth="2"
         />
 
@@ -111,7 +111,7 @@ const SkillRadarChart = ({ path, width = 300, height = 300 }) => {
 
           return (
             <g key={`point-${i}`}>
-              <circle cx={p.x} cy={p.y} r="4" fill="#4f46e5" />
+              <circle cx={p.x} cy={p.y} r="4" fill="#7c3aed" />
               <text
                 x={labelP.x}
                 y={labelP.y}
@@ -126,7 +126,7 @@ const SkillRadarChart = ({ path, width = 300, height = 300 }) => {
                 y={labelP.y + 12}
                 textAnchor={textAnchor}
                 dominantBaseline="middle"
-                className="text-[10px] font-bold fill-indigo-600"
+                className="text-[10px] font-bold fill-violet-600"
               >
                 {d.score}%
               </text>
