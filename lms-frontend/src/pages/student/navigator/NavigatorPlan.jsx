@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useNavigator } from '../../../context/NavigatorContext';
 import CanvasPath from '../../../components/ui/student/navigator/CanvasPath';
+import MindMap from '../../../components/ui/student/navigator/MindMap';
 import CanvasTimeBudget from '../../../components/ui/student/navigator/CanvasTimeBudget';
 import ChatPanel from '../../../components/ui/student/navigator/ChatPanel';
-import { MessageSquare, Play } from 'lucide-react';
+import { MessageSquare, Play, ArrowLeft } from 'lucide-react';
 
 const NavigatorPlan = () => {
   const { state, dispatch } = useNavigator();
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(true);
+  const [viewMode, setViewMode] = useState('mindmap');
 
   if (!state.goal || !state.capabilityGraph) {
     return <Navigate to="/student/navigator" />;
@@ -30,7 +32,14 @@ const NavigatorPlan = () => {
     <div className="flex h-[calc(100vh-4rem)]">
       {/* Main Canvas Area */}
       <div className="flex-1 overflow-y-auto bg-gray-50/30 p-8">
-        <div className="max-w-3xl mx-auto">
+        <div className="w-full h-full flex flex-col mx-auto">
+          <button 
+            onClick={() => navigate('/student/dashboard')}
+            className="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 mb-4 transition-colors w-fit"
+          >
+            <ArrowLeft size={16} /> Back to Dashboard
+          </button>
+          
           <div className="flex justify-between items-end mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Learning Path</h1>
@@ -54,11 +63,40 @@ const NavigatorPlan = () => {
             </div>
           </div>
 
-          <CanvasTimeBudget currentHours={totalHours} maxHours={state.goal.totalBudgetHours} />
+          <div className="mb-8">
+            <CanvasTimeBudget currentHours={totalHours} maxHours={state.goal.totalBudgetHours} />
+          </div>
           
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-6">Learning Sequence</h3>
-            <CanvasPath path={state.currentPath} isEditing={true} />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col flex-1 min-h-[500px]">
+            <div className="flex justify-between items-center p-6 pb-4 shrink-0 border-b border-gray-50">
+              <h3 className="text-lg font-semibold text-gray-800">Learning Sequence</h3>
+              <div className="flex bg-gray-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${viewMode === 'list' ? 'bg-white text-indigo-600 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  List View
+                </button>
+                <button
+                  onClick={() => setViewMode('mindmap')}
+                  className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${viewMode === 'mindmap' ? 'bg-white text-indigo-600 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Mind Map
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 min-h-0 relative bg-gray-50/30 rounded-b-xl overflow-hidden">
+              {viewMode === 'list' ? (
+                <div className="absolute inset-0 overflow-y-auto p-6 pr-4">
+                  <CanvasPath path={state.currentPath} isEditing={true} />
+                </div>
+              ) : (
+                <div className="absolute inset-0">
+                  <MindMap />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
