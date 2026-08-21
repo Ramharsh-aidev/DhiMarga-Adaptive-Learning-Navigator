@@ -38,7 +38,7 @@ const CanvasPath = ({ path, isEditing }) => {
   return (
     <div className="pl-2 relative pb-8">
       {errorMsg && (
-        <div className="absolute top-[-40px] left-0 right-0 bg-red-100 text-red-600 text-xs p-2 rounded border border-red-200 text-center">
+        <div className="absolute top-[-40px] left-0 right-0 bg-rose-100 text-rose-600 font-bold text-xs p-2 rounded-lg border border-rose-200 text-center shadow-sm">
           {errorMsg}
         </div>
       )}

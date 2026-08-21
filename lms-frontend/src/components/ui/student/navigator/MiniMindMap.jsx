@@ -17,7 +17,7 @@ const MiniMindMap = ({ onExpand }) => {
     <div className="relative w-full h-full min-h-[120px] bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-hidden flex flex-col justify-center items-center">
       <div className="absolute top-2 right-2 flex gap-1">
         <span className="w-2 h-2 rounded-full bg-green-400"></span>
-        <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+        <span className="w-2 h-2 rounded-full bg-violet-400"></span>
         <span className="w-2 h-2 rounded-full bg-slate-300"></span>
       </div>
 
@@ -38,13 +38,13 @@ const MiniMindMap = ({ onExpand }) => {
             Icon = CheckCircle2;
             iconColor = 'text-green-600';
           } else if (isCurrent) {
-            bgColor = 'bg-blue-50 border-blue-300 ring-2 ring-blue-100 shadow-sm';
-            textColor = 'text-blue-800';
+            bgColor = 'bg-violet-50 border-violet-300 ring-2 ring-violet-100 shadow-sm font-bold';
+            textColor = 'text-violet-800';
             Icon = Clock;
-            iconColor = 'text-blue-600';
+            iconColor = 'text-violet-600';
           } else if (isGap) {
-            bgColor = 'bg-orange-50 border-orange-200';
-            textColor = 'text-orange-800';
+            bgColor = 'bg-rose-50 border-rose-200';
+            textColor = 'text-rose-800';
           }
 
           return (
@@ -64,7 +64,7 @@ const MiniMindMap = ({ onExpand }) => {
       {onExpand && (
         <button 
           onClick={onExpand}
-          className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors self-end"
+          className="mt-2 text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors self-end"
         >
           View Full Map →
         </button>
