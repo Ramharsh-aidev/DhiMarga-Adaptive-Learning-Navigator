@@ -25,18 +25,18 @@ const TaskItem = ({ task, index, onClick }) => {
         <div className="flex items-start gap-3">
           <input
             type="checkbox"
-            className="mt-1 w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            className="mt-1 w-5 h-5 text-violet-600 border-slate-300 rounded focus:ring-2 focus:ring-violet-500 cursor-pointer"
             onClick={(e) => e.stopPropagation()}
           />
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-medium text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
+            <h4 className="text-sm font-bold text-slate-900 mb-2 group-hover:text-violet-600 transition-colors">
               {task.title}
             </h4>
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={getPriorityVariant(task.priority)} size="sm">
                 {task.priority}
               </Badge>
-              <span className="text-xs text-gray-500">{task.dueDate}</span>
+              <span className="text-xs text-slate-500 font-medium">{task.dueDate}</span>
             </div>
           </div>
         </div>

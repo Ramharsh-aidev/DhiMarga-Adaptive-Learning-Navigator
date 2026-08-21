@@ -8,8 +8,8 @@ const TasksSection = ({ tasks, onTaskClick, onViewAll }) => {
   return (
     <Card padding="lg">
       <div className="flex items-center gap-2 mb-6">
-        <CheckCircle2 size={20} className="text-indigo-600" />
-        <h2 className="text-xl font-bold text-gray-800">Upcoming Tasks</h2>
+        <CheckCircle2 size={20} className="text-violet-600" />
+        <h2 className="text-xl font-bold text-slate-900">Upcoming Tasks</h2>
       </div>
 
       {tasks.length > 0 ? (

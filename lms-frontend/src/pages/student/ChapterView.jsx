@@ -109,6 +109,8 @@ const ChapterView = () => {
       const response = await completeChapter(chapterId);
       
       setSuccess(response.message || 'Chapter completed successfully!');
+      // Signal dashboard to refresh stats on next focus
+      localStorage.setItem('lms_progress_dirty', Date.now().toString());
       await fetchData();
       setTimeout(() => setSuccess(null), 2000);
     } catch (err) {

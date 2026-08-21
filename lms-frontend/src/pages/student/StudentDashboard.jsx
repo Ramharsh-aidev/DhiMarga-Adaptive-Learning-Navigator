@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
@@ -8,52 +8,36 @@ import WelcomeSection from '../../components/ui/student/WelcomeSection';
 import StatsGrid from '../../components/ui/student/StatsGrid';
 import CoursesSection from '../../components/ui/student/CoursesSection';
 import TasksSection from '../../components/ui/student/TasksSection';
-import { getMyProgress } from '../../services/progressService';
-import { calculateStats, getRecentCourses, getUpcomingTasks } from '../../utils/dashboardHelpers';
-import { useNavigator } from '../../context/NavigatorContext';
 import NavigatorSummaryWidget from '../../components/ui/student/NavigatorSummaryWidget';
+import useDashboardData from '../../hooks/useDashboardData';
+import { RefreshCw } from 'lucide-react';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [progressData, setProgressData] = useState([]);
-  const [stats, setStats] = useState({
-    enrolledCourses: 0,
-    overallProgress: 0,
-    certificates: 0,
-    learningHours: 0
-  });
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  const {
+    courseStats,
+    navigatorStats,
+    recentCourses,
+    upcomingTasks,
+    loading,
+    error,
+    lastUpdatedAt,
+    refresh
+  } = useDashboardData();
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-      const progressResponse = await getMyProgress();
-      setProgressData(progressResponse || []);
-      setStats(calculateStats(progressResponse));
-
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError(err.response?.data?.message || 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refresh();
+    setIsRefreshing(false);
   };
 
   if (loading) {
     return <PageLoader text="Loading Dashboard..." />;
   }
-
-  const recentCourses = getRecentCourses(progressData);
-  const upcomingTasks = getUpcomingTasks(progressData);
 
   return (
     <Layout>
@@ -63,28 +47,43 @@ const StudentDashboard = () => {
             variant="danger"
             title="Error"
             message={error}
-            onClose={() => setError(null)}
+            onClose={() => {}}
             className="mb-6"
           />
         )}
 
-        <WelcomeSection userName={user?.name} />
-        
-        <NavigatorSummaryWidget />
+        <div className="flex items-start justify-between mb-6">
+          <WelcomeSection userName={user?.name} />
+          <div className="flex items-center gap-3 text-sm text-slate-400 mt-2 shrink-0">
+            {lastUpdatedAt && (
+              <span>Updated {new Date(lastUpdatedAt).toLocaleTimeString()}</span>
+            )}
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors disabled:opacity-50 font-medium"
+            >
+              <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
+        </div>
 
-        <StatsGrid stats={stats} />
+        {/* Navigator widget — only shown if at least one path is active */}
+        {navigatorStats.activePaths > 0 && <NavigatorSummaryWidget />}
+
+        <StatsGrid stats={courseStats} navigatorStats={navigatorStats} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <CoursesSection 
+            <CoursesSection
               courses={recentCourses}
               onCourseClick={(id) => navigate(`/student/courses/${id}`)}
               onViewAll={() => navigate('/student/courses')}
             />
           </div>
-
           <div>
-            <TasksSection 
+            <TasksSection
               tasks={upcomingTasks}
               onTaskClick={(id) => navigate(`/student/courses/${id}`)}
               onViewAll={() => navigate('/student/courses')}

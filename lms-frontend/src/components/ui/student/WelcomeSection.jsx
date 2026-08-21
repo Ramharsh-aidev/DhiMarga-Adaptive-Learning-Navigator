@@ -11,10 +11,10 @@ const WelcomeSection = ({ userName }) => {
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
             Welcome back, {userName}! 👋
           </h1>
-          <p className="text-gray-600">Ready to continue your learning journey?</p>
+          <p className="text-slate-600 font-medium">Ready to continue your learning journey?</p>
         </div>
         <Button
           variant="outline"
