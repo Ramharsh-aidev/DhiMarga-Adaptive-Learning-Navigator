@@ -40,8 +40,8 @@ const NavigatorRecovery = () => {
   return (
     <div className="max-w-3xl mx-auto py-12 px-6">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Adaptive Recovery</h1>
-        <p className="text-gray-600">We detected a blockage in your learning path. Instead of restarting you, we've found the minimum required intervention.</p>
+        <h1 className="text-3xl font-extrabold text-slate-900 mb-4 tracking-tight">Adaptive Recovery</h1>
+        <p className="text-slate-600 font-medium">We detected a blockage in your learning path. Instead of restarting you, we've found the minimum required intervention.</p>
       </div>
 
       <RecoveryCard recoveryEvent={mockRecoveryEvent} onStart={handleStartRecovery} />
@@ -52,7 +52,7 @@ const NavigatorRecovery = () => {
             dispatch({ type: 'SET_PATH_STATUS', payload: 'active' });
             navigate('/student/navigator/dashboard');
           }}
-          className="text-gray-500 text-sm hover:text-gray-800 underline"
+          className="text-slate-500 text-sm font-bold hover:text-slate-800 underline transition-colors"
         >
           Ignore and continue anyway (Not recommended)
         </button>
