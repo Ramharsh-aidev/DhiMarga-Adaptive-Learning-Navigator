@@ -11,12 +11,13 @@ import {
   Award,
   Users,
   BarChart3,
-  Home
+  Home,
+  Menu
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { USER_ROLES } from '../../utils/constants';
 
-const Navbar = () => {
+const Navbar = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -117,27 +118,38 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white/80 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-white/80 backdrop-blur-2xl border-b border-slate-200 sticky top-0 z-50 shadow-sm relative">
+      <div className="absolute inset-0 bg-linear-to-r from-violet-50/50 via-transparent to-purple-50/50 pointer-events-none" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link 
-            to={getDashboardLink()} 
-            className="flex items-center gap-3 group"
-          >
-            <motion.div
-              className="w-10 h-10 bg-linear-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
-              whileHover={{ scale: 1.05, rotate: 5 }}
+          <div className="flex items-center gap-3 md:gap-0">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={onMenuClick}
+              className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
             >
-              <BookOpen size={24} className="text-white" />
-            </motion.div>
-            <div>
-              <h1 className="text-xl font-bold bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                DhiMārga
-              </h1>
-              <p className="text-xs text-gray-500 -mt-1">Learning Management</p>
-            </div>
-          </Link>
+              <Menu size={24} />
+            </button>
+
+            {/* Logo */}
+            <Link 
+              to={getDashboardLink()} 
+              className="flex items-center gap-3 group"
+            >
+              <motion.div
+                className="w-10 h-10 bg-linear-to-br from-violet-600 to-purple-600 rounded-xl flex items-center justify-center shadow-[0_4px_16px_rgba(124,58,237,0.4)] hidden sm:flex"
+                whileHover={{ scale: 1.05, rotate: 5 }}
+              >
+                <BookOpen size={24} className="text-white" />
+              </motion.div>
+              <div>
+                <h1 className="text-xl font-extrabold bg-linear-to-r from-violet-600 via-purple-500 to-pink-500 bg-clip-text text-transparent tracking-tight">
+                  DhiMārga
+                </h1>
+                <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider -mt-1 hidden sm:block">Learning Management</p>
+              </div>
+            </Link>
+          </div>
 
           {/* Quick Links - Hidden on mobile */}
           <div className="hidden md:flex items-center gap-1">
@@ -147,10 +159,10 @@ const Navbar = () => {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-600 hover:text-violet-700 hover:bg-violet-50 transition-colors"
                 >
                   <Icon size={18} />
-                  <span className="text-sm font-medium">{link.label}</span>
+                  <span className="text-sm font-bold tracking-tight">{link.label}</span>
                 </Link>
               );
             })}
@@ -161,34 +173,34 @@ const Navbar = () => {
             {/* Home Link */}
             <Link
               to="/"
-              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-slate-600 hover:text-violet-700 hover:bg-violet-50 transition-colors"
             >
               <Home size={18} />
-              <span className="text-sm font-medium">Home</span>
+              <span className="text-sm font-bold tracking-tight">Home</span>
             </Link>
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200"
               >
                 {/* Avatar */}
-                <div className="w-9 h-9 bg-linear-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-semibold shadow-md">
+                <div className="w-10 h-10 bg-linear-to-br from-violet-500 to-purple-600 rounded-[14px] flex items-center justify-center text-white font-bold shadow-md">
                   {user?.name?.charAt(0)?.toUpperCase()}
                 </div>
 
                 {/* User Info */}
                 <div className="hidden sm:block text-left">
-                  <p className="text-sm font-medium text-gray-800">{user?.name}</p>
-                  <p className={`text-xs px-2 py-0.5 rounded-full inline-block ${getRoleBadgeColor()}`}>
+                  <p className="text-sm font-bold text-slate-900 tracking-tight leading-tight">{user?.name}</p>
+                  <p className="text-[11px] font-bold text-violet-600 uppercase tracking-wide">
                     {user?.role}
                   </p>
                 </div>
 
                 <ChevronDown 
-                  size={18} 
-                  className={`text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                  size={16} 
+                  className={`text-slate-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
                 />
               </button>
 
@@ -196,63 +208,63 @@ const Navbar = () => {
               <AnimatePresence>
                 {dropdownOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl shadow-violet-500/10 border border-slate-200 overflow-hidden origin-top-right"
                   >
                     {/* User Info in Dropdown */}
-                    <div className="p-4 bg-linear-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-linear-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                    <div className="p-5 bg-linear-to-br from-violet-50 to-purple-50 border-b border-slate-100">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-linear-to-br from-violet-500 to-purple-600 rounded-[14px] flex items-center justify-center text-white font-bold text-lg shadow-md">
                           {user?.name?.charAt(0)?.toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-800">{user?.name}</p>
-                          <p className="text-sm text-gray-500">{user?.email}</p>
+                          <p className="font-bold text-slate-900 tracking-tight">{user?.name}</p>
+                          <p className="text-xs text-slate-500">{user?.email}</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Menu Items */}
-                    <div className="py-2">
+                    <div className="p-2 space-y-1">
                       <Link
                         to={getDashboardLink()}
                         onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 hover:text-violet-600 transition-colors group text-slate-600"
                       >
-                        <LayoutDashboard size={18} className="text-gray-500" />
-                        <span className="text-sm text-gray-700">Dashboard</span>
+                        <LayoutDashboard size={18} className="group-hover:text-violet-500 transition-colors" />
+                        <span className="text-sm font-semibold">Dashboard</span>
                       </Link>
 
                       <Link
                         to={getProfileLink()}
                         onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 hover:text-violet-600 transition-colors group text-slate-600"
                       >
-                        <User size={18} className="text-gray-500" />
-                        <span className="text-sm text-gray-700">Profile</span>
+                        <User size={18} className="group-hover:text-violet-500 transition-colors" />
+                        <span className="text-sm font-semibold">Profile</span>
                       </Link>
 
                       <Link
                         to={getSettingsLink()}
                         onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 hover:text-violet-600 transition-colors group text-slate-600"
                       >
-                        <Settings size={18} className="text-gray-500" />
-                        <span className="text-sm text-gray-700">Settings</span>
+                        <Settings size={18} className="group-hover:text-violet-500 transition-colors" />
+                        <span className="text-sm font-semibold">Settings</span>
                       </Link>
                     </div>
 
                     {/* Logout */}
-                    <div className="border-t border-gray-200">
+                    <div className="p-2 border-t border-slate-100">
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-red-600"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-rose-50 text-slate-600 hover:text-rose-600 transition-colors group"
                       >
-                        <LogOut size={18} />
-                        <span className="text-sm font-medium">Logout</span>
+                        <LogOut size={18} className="text-slate-400 group-hover:text-rose-500 transition-colors" />
+                        <span className="text-sm font-semibold">Logout</span>
                       </button>
                     </div>
                   </motion.div>
