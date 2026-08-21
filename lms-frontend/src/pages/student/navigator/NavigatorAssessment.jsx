@@ -4,6 +4,9 @@ import { useNavigator } from '../../../context/NavigatorContext';
 import { getQuestionsForSkill } from '../../../data/assessmentQuestions';
 import QuizQuestion from '../../../components/ui/student/navigator/QuizQuestion';
 
+import { aiService } from '../../../services/aiService';
+import { Loader2 } from 'lucide-react';
+
 const NavigatorAssessment = () => {
   const { skillId } = useParams();
   const { state, dispatch } = useNavigator();
@@ -13,20 +16,31 @@ const NavigatorAssessment = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [answers, setAnswers] = useState([]);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluationResult, setEvaluationResult] = useState(null);
 
   useEffect(() => {
     setQuestions(getQuestionsForSkill(skillId));
   }, [skillId]);
 
-  const handleAnswer = (isCorrect) => {
+  const handleAnswer = async (isCorrect, selectedOption) => {
     if (isCorrect) setScore(s => s + 1);
+    
+    const newAnswers = [...answers, {
+      question: questions[currentIdx].question,
+      userAnswer: selectedOption,
+      correctAnswer: questions[currentIdx].correctAnswer,
+      isCorrect
+    }];
+    setAnswers(newAnswers);
     
     if (currentIdx + 1 < questions.length) {
       setCurrentIdx(currentIdx + 1);
     } else {
       setCompleted(true);
+      setIsEvaluating(true);
       
-      // Calculate final score
       const finalScorePercentage = Math.round(((score + (isCorrect ? 1 : 0)) / questions.length) * 100);
       
       dispatch({
@@ -34,13 +48,16 @@ const NavigatorAssessment = () => {
         payload: { skillId, masteryScore: finalScorePercentage }
       });
       
-      // Check if blocked (e.g. failed a critical dependency)
-      // For prototype, we randomly simulate a blockage if they fail
-      if (finalScorePercentage < 60) {
+      // Call AI to evaluate and potentially modify the path
+      const result = await aiService.evaluateAssessment(skillId, newAnswers, state, dispatch);
+      setEvaluationResult(result);
+      
+      if (finalScorePercentage < 60 && (!result?.action || result.action.type !== 'ADD_SUBTREE')) {
         dispatch({ type: 'TRIGGER_RECOVERY', payload: { skillId } });
       } else {
-        dispatch({ type: 'REPLAN_PATH' }); // Update path to mark current as completed and shift up
+        dispatch({ type: 'REPLAN_PATH' });
       }
+      setIsEvaluating(false);
     }
   };
 
@@ -49,15 +66,47 @@ const NavigatorAssessment = () => {
   if (completed) {
     const finalScore = Math.round((score / questions.length) * 100);
     return (
-      <div className="max-w-2xl mx-auto py-12 px-6 text-center">
-        <h2 className="text-2xl font-bold mb-4">Assessment Complete</h2>
-        <div className="text-4xl font-bold mb-6 text-indigo-600">{finalScore}%</div>
-        <button 
-          onClick={() => navigate(finalScore < 60 ? '/student/navigator/recovery' : '/student/navigator/dashboard')}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
-        >
-          {finalScore < 60 ? 'View Recovery Plan' : 'Return to Dashboard'}
-        </button>
+      <div className="max-w-2xl mx-auto py-12 px-6">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold mb-4">Assessment Complete</h2>
+          <div className="text-4xl font-bold mb-6 text-indigo-600">{finalScore}%</div>
+        </div>
+
+        {isEvaluating ? (
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-8 flex flex-col items-center justify-center text-indigo-600">
+            <Loader2 className="animate-spin mb-4" size={32} />
+            <p className="font-medium">AI is evaluating your responses and updating your path...</p>
+          </div>
+        ) : evaluationResult ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">AI Evaluation</h3>
+            <p className="text-gray-700 mb-6">{evaluationResult.summary}</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-green-800 mb-2">Strong Topics</h4>
+                <ul className="list-disc pl-5 text-sm text-green-700">
+                  {evaluationResult.strongTopics?.map((t, i) => <li key={i}>{t}</li>) || <li>None</li>}
+                </ul>
+              </div>
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-orange-800 mb-2">Needs Review</h4>
+                <ul className="list-disc pl-5 text-sm text-orange-700">
+                  {evaluationResult.weakTopics?.map((t, i) => <li key={i}>{t}</li>) || <li>None</li>}
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <button 
+                onClick={() => navigate(finalScore < 60 ? '/student/navigator/recovery' : '/student/navigator/dashboard')}
+                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+              >
+                {finalScore < 60 ? 'View Recovery Plan' : 'Continue to Dashboard'}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -75,6 +124,7 @@ const NavigatorAssessment = () => {
       </div>
       
       <QuizQuestion 
+        key={currentIdx}
         question={questions[currentIdx]} 
         onAnswer={handleAnswer} 
       />

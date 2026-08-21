@@ -10,6 +10,7 @@ import ChatPanel from '../../../components/ui/student/navigator/ChatPanel';
 import { calculateLearningDebt, calculateGoalReadiness } from '../../../engine/learningDebtCalculator';
 import { classifySkillState } from '../../../engine/blockageDetector';
 import { MessageSquare } from 'lucide-react';
+import ContentSelectionModal from '../../../components/ui/student/navigator/ContentSelectionModal';
 
 const NavigatorDashboard = () => {
   const { state, dispatch } = useNavigator();
@@ -36,8 +37,17 @@ const NavigatorDashboard = () => {
     }
   };
 
+  const handleSelectContentMode = (mode) => {
+    dispatch({ type: 'SET_CONTENT_MODE', payload: mode });
+  };
+
   return (
     <div className="flex h-[calc(100vh-4rem)]">
+      {/* Show content selection if not chosen yet */}
+      {state.pathStatus === 'active' && !state.goal?.contentMode && (
+        <ContentSelectionModal onSelect={handleSelectContentMode} />
+      )}
+      
       <div className="flex-1 overflow-y-auto bg-gray-50/30 p-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-8">

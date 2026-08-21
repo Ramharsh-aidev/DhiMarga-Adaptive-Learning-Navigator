@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Bot, Send, ArrowRight } from 'lucide-react';
+import { Bot, Send, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useNavigator } from '../../../context/NavigatorContext';
 import { aiService } from '../../../services/aiService';
 
@@ -43,6 +43,13 @@ const NavigatorGoal = () => {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-6">
+      <button 
+        onClick={() => navigate('/student/dashboard')}
+        className="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 mb-6 transition-colors"
+      >
+        <ArrowLeft size={16} /> Back to Dashboard
+      </button>
+
       <div className="text-center mb-12">
         <motion.div 
           initial={{ scale: 0 }}
