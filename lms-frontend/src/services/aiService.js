@@ -99,6 +99,19 @@ export const aiService = {
       weakTopics: ["Review needed"],
       strongTopics: ["Passed topics"]
     };
+  },
+
+  generateQuestions: async (skillId, count = 5) => {
+    if (GEMINI_API_KEY) {
+      try {
+        console.log('[AI] generateQuestions → Gemini');
+        return await callGeminiQuestionGeneration(skillId, count);
+      } catch (err) {
+        console.warn('[AI] Gemini question generation failed:', err.message);
+      }
+    }
+    // Fallback deterministic questions
+    return generateDeterministicQuestions(skillId, count);
   }
 };
 
@@ -296,6 +309,72 @@ Valid action types:
     routeChatAction(result.action.type, result.action.payload, context, dispatch);
   }
   return result;
+}
+
+async function callGeminiQuestionGeneration(skillId, count) {
+  const prompt = `You are an expert educator. Generate exactly ${count} assessment questions for the topic/skill '${skillId}'. 
+Vary the difficulty. 
+Mix the question types between:
+1. "multiple_choice" (4 options)
+2. "true_false" (options must be strictly ["True", "False"])
+3. "scenario" (provide a 'scenario' field with a paragraph of context, then a multiple choice question about it)
+
+Format the output strictly as a JSON array of objects. DO NOT wrap in markdown.
+Example format:
+[
+  {
+    "id": "q1",
+    "type": "multiple_choice",
+    "question": "What is...",
+    "options": ["A", "B", "C", "D"],
+    "correctAnswer": "B",
+    "difficulty": "medium",
+    "explanation": "Because B is the right answer."
+  },
+  {
+    "id": "q2",
+    "type": "true_false",
+    "question": "The sky is green.",
+    "options": ["True", "False"],
+    "correctAnswer": "False",
+    "difficulty": "easy",
+    "explanation": "The sky is blue."
+  },
+  {
+    "id": "q3",
+    "type": "scenario",
+    "scenario": "You have a dataset with 50% missing values in a critical column.",
+    "question": "What is the best approach?",
+    "options": ["Drop column", "Impute mean", "Use a model that handles missing data", "Replace with 0"],
+    "correctAnswer": "Use a model that handles missing data",
+    "difficulty": "hard",
+    "explanation": "Dropping loses information, mean imputation skews variance..."
+  }
+]
+`;
+
+  const text = await callGemini({
+    contents: [{ parts: [{ text: prompt }] }]
+  });
+
+  let cleaned = text.trim();
+  const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+
+  return JSON.parse(cleaned);
+}
+
+function generateDeterministicQuestions(skillId, count) {
+  const formattedTitle = skillId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return Array.from({ length: count }).map((_, i) => ({
+    id: `q_${skillId}_${i}`,
+    type: 'multiple_choice',
+    question: `What is the primary purpose of ${formattedTitle}? (Question ${i + 1})`,
+    options: ['To increase complexity', 'To solve specific domain problems', 'To reduce performance', 'None of the above'],
+    correctAnswer: 'To solve specific domain problems',
+    difficulty: 'easy',
+    explanation: `This is a fallback deterministic explanation for ${formattedTitle}.`
+  }));
 }
 
 // ─── Deterministic Fallback ───────────────────────────────────────────────────
