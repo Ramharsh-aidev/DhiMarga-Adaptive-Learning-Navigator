@@ -47,15 +47,38 @@ const CanvasNode = ({ item, isDraggable = false }) => {
             )}
           </div>
           <p className="text-xs mt-1 opacity-80">{nodeRef?.category}</p>
+          {item.selectedResource?.url && (
+            <a 
+              href={item.selectedResource.url} 
+              target="_blank" 
+              rel="noreferrer"
+              className="text-[10px] inline-block mt-2 font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-0.5 px-2 rounded-full transition-colors"
+            >
+              Watch Video
+            </a>
+          )}
         </div>
 
-        <div className="text-right">
-          <div className="text-xs font-medium">~{Math.round(estimatedHours)}h</div>
-          {isDraggable && status !== 'completed' && (
-            <button onClick={handleRemove} className="mt-1 text-gray-400 hover:text-red-500 transition-colors">
-              <X size={14} />
-            </button>
-          )}
+        <div className="text-right flex flex-col items-end">
+          <div className="text-xs font-medium mb-2">~{Math.round(estimatedHours)}h</div>
+          
+          <div className="flex items-center gap-2">
+            {status !== 'completed' && (
+              <a 
+                href={`/student/navigator/assess/${item.skillId}`}
+                className="text-[10px] px-2 py-1 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-medium transition-colors cursor-pointer"
+                title="I already know this - take assessment"
+              >
+                Verify
+              </a>
+            )}
+            
+            {isDraggable && status !== 'completed' && (
+              <button onClick={handleRemove} className="text-gray-400 hover:text-red-500 transition-colors">
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
