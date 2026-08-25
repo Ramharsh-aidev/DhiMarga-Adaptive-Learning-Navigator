@@ -242,12 +242,21 @@ AVAILABLE ACTIONS — pick the most appropriate one:
 1. Add a SINGLE existing skill:
    {"type": "ADD_SKILL", "payload": {"skillId": "<existing_skill_id>"}}
 
-2. Add a NEW TOPIC with full sub-skill breakdown (use when user asks about a broad concept not in the graph):
+2. Add a NEW TOPIC with full sub-skill breakdown (use when user asks about a broad concept not in the graph, or wants to explore something deeply):
    {"type": "ADD_SUBTREE", "payload": {"topic": "<topic name>", "nodes": [
-     {"id": "<snake_case_id>", "label": "<Human Label>", "category": "<category>", "estimatedHours": <number>, "prerequisites": ["<id>"], "unlocks": ["<id>"]},
+     {
+       "id": "<snake_case_id>", 
+       "label": "<Human Label>", 
+       "category": "<category>", 
+       "estimatedHours": <number>, 
+       "prerequisites": ["<id>"], 
+       "unlocks": ["<id>"],
+       "resourceTitle": "<Title of a suggested learning resource>",
+       "resourceUrl": "<URL to a real tutorial, documentation, or video>"
+     },
      ... (put ALL related sub-skills, properly linked)
    ]}}
-   IMPORTANT: For ADD_SUBTREE, include ALL prerequisite and unlock relationships between the new nodes. Always start from foundational nodes (prerequisites: []) and build up.
+   IMPORTANT: For ADD_SUBTREE, include ALL prerequisite and unlock relationships between the new nodes. Always start from foundational nodes (prerequisites: []) and build up. Make sure to provide a valid, highly-relevant real-world URL for resourceUrl (like YouTube, official docs, or reputable tutorials) so the user actually has content to learn from.
 
 3. Remove a skill from the path:
    {"type": "REMOVE_SKILL", "payload": {"skillId": "<skill_id>"}}
@@ -266,6 +275,9 @@ RULES:
 - Use ADD_SKILL only for simple, specific additions of already-known skills.
 - For REMOVE_SKILL, match the skillId from the current path.
 - Always return exactly one action or null.
+
+Recent Chat History:
+${(context.chatHistory || []).slice(-4).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
 
 User message: ${message}`;
 
