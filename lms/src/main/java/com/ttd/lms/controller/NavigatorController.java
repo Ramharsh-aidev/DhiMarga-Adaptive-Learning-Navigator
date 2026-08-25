@@ -21,6 +21,7 @@ import java.util.UUID;
 public class NavigatorController {
 
     private final NavigatorService navigatorService;
+    private final com.ttd.lms.service.PathService pathService;
 
     /**
      * GET /api/navigator/state
@@ -54,6 +55,17 @@ public class NavigatorController {
         }
 
         NavigatorStateResponse response = navigatorService.saveState(studentId, request.getStateJson());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/navigator/dashboard-summary
+     * Returns highly optimized overview of the active path for the dashboard.
+     */
+    @GetMapping("/dashboard-summary")
+    public ResponseEntity<com.ttd.lms.model.DashboardSummaryResponse> getDashboardSummary(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        com.ttd.lms.model.DashboardSummaryResponse response = pathService.getDashboardSummary(user.getId());
         return ResponseEntity.ok(response);
     }
 }
