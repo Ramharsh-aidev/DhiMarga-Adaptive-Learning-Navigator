@@ -21,19 +21,19 @@ const NavigatorRecovery = () => {
     interventionCostMinutes: 30
   };
 
-  const handleStartRecovery = () => {
+  const handleStartRecovery = async () => {
     // In reality, this would navigate to a content player for the resource
     // For prototype, we'll auto-resolve it
     alert('Simulating recovery intervention completion...');
     
     // Auto-verify the skill to clear blockage
-    dispatch({
+    await dispatch({
       type: 'UPDATE_MASTERY',
       payload: { skillId: blockedNode.skillId, masteryScore: 100 }
     });
     
-    dispatch({ type: 'SET_PATH_STATUS', payload: 'active' });
-    dispatch({ type: 'REPLAN_PATH' });
+    await dispatch({ type: 'SET_PATH_STATUS', payload: 'active' });
+    await dispatch({ type: 'REPLAN_PATH' });
     navigate('/student/navigator/dashboard');
   };
 
@@ -48,8 +48,8 @@ const NavigatorRecovery = () => {
       
       <div className="mt-8 text-center">
         <button 
-          onClick={() => {
-            dispatch({ type: 'SET_PATH_STATUS', payload: 'active' });
+          onClick={async () => {
+            await dispatch({ type: 'SET_PATH_STATUS', payload: 'active' });
             navigate('/student/navigator/dashboard');
           }}
           className="text-slate-500 text-sm font-bold hover:text-slate-800 underline transition-colors"

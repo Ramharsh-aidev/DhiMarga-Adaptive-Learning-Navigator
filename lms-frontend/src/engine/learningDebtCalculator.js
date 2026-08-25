@@ -2,7 +2,7 @@
  * Learning Debt Calculator
  */
 
-export const calculateLearningDebt = (learnerState, capabilityGraph) => {
+export const calculateLearningDebt = (learnerState, capabilityGraph, currentPath = []) => {
   const debtItems = [];
   
   if (!capabilityGraph || !capabilityGraph.nodes) return debtItems;
@@ -16,14 +16,26 @@ export const calculateLearningDebt = (learnerState, capabilityGraph) => {
     }
   });
 
+  // Track skills that are currently active/upcoming in the path
+  const activeSkills = new Set();
+  if (currentPath && currentPath.length > 0) {
+    currentPath.forEach(node => {
+      const ls = learnerState[node.skillId];
+      if (!ls || ls.status !== 'verified') {
+        activeSkills.add(node.skillId);
+      }
+    });
+  }
+
   Object.values(learnerState).forEach(skill => {
     const node = capabilityGraph.nodes[skill.skillId];
     if (!node) return;
 
-    if (skill.masteryScore < node.masteryThreshold) {
+    // We consider it a debt if mastery is below threshold, and the user has ATTEMPTED it or it's explicitly a gap
+    if (skill.masteryScore < node.masteryThreshold && (skill.status === 'gap' || skill.evidenceLevel !== 'none')) {
       const gap = (node.masteryThreshold - skill.masteryScore) / 100;
       const goalRelevance = node.goalRelevance || 0.5;
-      const depImpact = (node.unlocks.length) / maxDependencyCount;
+      const depImpact = (node.unlocks ? node.unlocks.length : 0) / maxDependencyCount;
       
       const risk = gap * goalRelevance * (depImpact + 0.1); // Add baseline impact
       
@@ -31,18 +43,72 @@ export const calculateLearningDebt = (learnerState, capabilityGraph) => {
       if (risk > 0.25) severity = 'HIGH';
       else if (risk > 0.10) severity = 'MEDIUM';
 
+      // Weak vs Blocking Detection
+      let isBlocking = false;
+      const blockedSkills = [];
+      
+      if (node.unlocks) {
+        node.unlocks.forEach(unlockedId => {
+          if (activeSkills.has(unlockedId)) {
+            isBlocking = true;
+            blockedSkills.push(unlockedId);
+          }
+        });
+      }
+
+      const type = isBlocking ? 'BLOCKING' : 'WEAK';
+
       debtItems.push({
         skillId: skill.skillId,
         skillName: node.label,
         gap: Math.round(gap * 100),
         severity,
-        riskScore: risk
+        riskScore: risk,
+        type,
+        blockedSkills
       });
     }
   });
 
   // Sort by risk descending
   return debtItems.sort((a, b) => b.riskScore - a.riskScore);
+};
+
+export const diagnoseRootCause = (failedSkillId, learnerState, capabilityGraph) => {
+  if (!capabilityGraph || !capabilityGraph.nodes) return [];
+  
+  const rootCauses = [];
+  const visited = new Set();
+  
+  const trace = (skillId) => {
+    if (visited.has(skillId)) return;
+    visited.add(skillId);
+    
+    const node = capabilityGraph.nodes[skillId];
+    if (!node) return;
+    
+    const state = learnerState[skillId];
+    // If state exists and is a gap
+    if (state && state.masteryScore < node.masteryThreshold && state.status === 'gap') {
+      rootCauses.push({
+        skillId,
+        skillName: node.label,
+        gap: node.masteryThreshold - state.masteryScore
+      });
+    }
+    
+    if (node.prerequisites) {
+      node.prerequisites.forEach(pre => trace(pre));
+    }
+  };
+  
+  const failedNode = capabilityGraph.nodes[failedSkillId];
+  if (failedNode && failedNode.prerequisites) {
+    failedNode.prerequisites.forEach(pre => trace(pre));
+  }
+  
+  // Sort by gap descending (biggest gap first)
+  return rootCauses.sort((a, b) => b.gap - a.gap);
 };
 
 export const calculateGoalReadiness = (learnerState, capabilityGraph, currentPath) => {

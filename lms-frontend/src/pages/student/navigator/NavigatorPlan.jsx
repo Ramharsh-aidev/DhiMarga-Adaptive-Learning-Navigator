@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useNavigator } from '../../../context/NavigatorContext';
 import CanvasPath from '../../../components/ui/student/navigator/CanvasPath';
 import MindMap from '../../../components/ui/student/navigator/MindMap';
@@ -10,15 +10,29 @@ import { MessageSquare, Play, ArrowLeft } from 'lucide-react';
 const NavigatorPlan = () => {
   const { state, dispatch } = useNavigator();
   const navigate = useNavigate();
+  const location = useLocation();
   const [chatOpen, setChatOpen] = useState(true);
   const [viewMode, setViewMode] = useState('mindmap');
 
+  const isNewPath = location.state?.newPath;
+
   if (!state.goal) {
+    if (isNewPath) {
+      return (
+        <div className="flex items-center justify-center h-screen bg-gray-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+        </div>
+      );
+    }
     return <Navigate to="/student/navigator" />;
   }
 
   if (!state.capabilityGraph) {
-    return <div className="flex items-center justify-center h-screen bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div></div>;
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+      </div>
+    );
   }
 
   // Calculate current hours
@@ -27,8 +41,8 @@ const NavigatorPlan = () => {
     return acc;
   }, 0);
 
-  const handleStart = () => {
-    dispatch({ type: 'SET_PATH_STATUS', payload: 'active' });
+  const handleStart = async () => {
+    await dispatch({ type: 'SET_PATH_STATUS', payload: 'active' });
     navigate('/student/navigator/dashboard');
   };
 

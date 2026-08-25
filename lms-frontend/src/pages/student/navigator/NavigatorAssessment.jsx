@@ -72,7 +72,7 @@ const NavigatorAssessment = () => {
       
       const finalScorePercentage = Math.round(((score + (isCorrect ? 1 : 0)) / questions.length) * 100);
       
-      dispatch({
+      await dispatch({
         type: 'UPDATE_MASTERY',
         payload: { skillId, masteryScore: finalScorePercentage }
       });
@@ -82,9 +82,9 @@ const NavigatorAssessment = () => {
       setEvaluationResult(result);
       
       if (finalScorePercentage < 60 && (!result?.action || result.action.type !== 'ADD_SUBTREE')) {
-        dispatch({ type: 'TRIGGER_RECOVERY', payload: { skillId } });
+        await dispatch({ type: 'TRIGGER_RECOVERY', payload: { skillId } });
       } else {
-        dispatch({ type: 'REPLAN_PATH' });
+        await dispatch({ type: 'REPLAN_PATH' });
       }
       setIsEvaluating(false);
     }

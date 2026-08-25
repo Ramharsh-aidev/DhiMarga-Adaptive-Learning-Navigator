@@ -8,8 +8,8 @@ import LearnerStatePanel from '../../../components/ui/student/navigator/LearnerS
 import NextActionCard from '../../../components/ui/student/navigator/NextActionCard';
 import CanvasPath from '../../../components/ui/student/navigator/CanvasPath';
 import ChatPanel from '../../../components/ui/student/navigator/ChatPanel';
-import { calculateLearningDebt, calculateGoalReadiness } from '../../../engine/learningDebtCalculator';
-import { MessageSquare, Clock, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { calculateLearningDebt, calculateGoalReadiness, diagnoseRootCause } from '../../../engine/learningDebtCalculator';
+import { MessageSquare, Clock, CheckCircle2, Circle, AlertCircle, TrendingDown } from 'lucide-react';
 import ContentSelectionModal from '../../../components/ui/student/navigator/ContentSelectionModal';
 import Layout from '../../../components/layout/Layout';
 
@@ -25,7 +25,7 @@ const NavigatorDashboard = () => {
   }, [state.pathStatus, navigate]);
 
   const readiness = calculateGoalReadiness(state.learnerState, state.capabilityGraph, state.currentPath);
-  const debtItems = calculateLearningDebt(state.learnerState, state.capabilityGraph);
+  const debtItems = calculateLearningDebt(state.learnerState, state.capabilityGraph, state.currentPath);
   
   // Stats calculation
   const stats = useMemo(() => {
@@ -51,10 +51,24 @@ const NavigatorDashboard = () => {
     return { verified, gap, upcoming, totalHours, total: state.currentPath.length };
   }, [state.currentPath, state.learnerState, state.goal, state.pathStatus]);
 
+  if (state.isLoadingPaths) {
+    return (
+      <div className="flex items-center justify-center h-full bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+      </div>
+    );
+  }
+
   if (!state.goal) return <Navigate to="/student/navigator" />;
   if (state.pathStatus === 'planning') return <Navigate to="/student/navigator/plan" />;
   
-  if (state.capabilityGraph === null) return <div className="flex items-center justify-center h-full bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div></div>;
+  if (state.capabilityGraph === null) {
+    return (
+      <div className="flex items-center justify-center h-full bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+      </div>
+    );
+  }
 
   if (state.capabilityGraph?.error) return (
     <div className="flex items-center justify-center h-full bg-gray-50 p-6">
@@ -73,20 +87,24 @@ const NavigatorDashboard = () => {
     return !ls || ls.status !== 'verified';
   });
 
+  const rootCauses = useMemo(() => {
+    if (!currentNode) return [];
+    return diagnoseRootCause(currentNode.skillId, state.learnerState, state.capabilityGraph);
+  }, [currentNode, state.learnerState, state.capabilityGraph]);
+
   const handleStartNextAction = () => {
     if (currentNode) {
       navigate(`/student/navigator/assess/${currentNode.skillId}`);
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     if (currentNode) {
-      dispatch({
+      await dispatch({
         type: 'UPDATE_MASTERY',
         payload: { skillId: currentNode.skillId, masteryScore: 100 }
       });
-      // Optionally replan path if skipping unlocks new things
-      setTimeout(() => dispatch({ type: 'REPLAN_PATH' }), 100);
+      await dispatch({ type: 'REPLAN_PATH' });
     }
   };
 
@@ -96,7 +114,6 @@ const NavigatorDashboard = () => {
 
   const activePathsList = state.paths?.filter(p => p.status === 'active') || [];
 
-// ... inside component ...
   return (
     <Layout>
       <div className="flex flex-col h-full bg-gray-50/30">
@@ -156,21 +173,35 @@ const NavigatorDashboard = () => {
               <div className="flex flex-col gap-2">
                 <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Active Journey</h1>
                 
-                {/* Path Switcher */}
-                {activePathsList.length > 1 && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-sm text-slate-500">Current Path:</span>
+                {/* Path and Mode Switchers */}
+                <div className="flex items-center gap-4 mt-2">
+                  {activePathsList.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-500">Current Path:</span>
+                      <select 
+                        className="bg-white border border-slate-200 text-sm font-medium rounded-lg px-3 py-1.5 outline-hidden focus:ring-2 focus:ring-violet-500 shadow-sm text-slate-700"
+                        value={state.activePathId || ''}
+                        onChange={(e) => dispatch({ type: 'SWITCH_PATH', payload: e.target.value })}
+                      >
+                        {activePathsList.map(p => (
+                          <option key={p.id} value={p.id}>{p.goal?.targetRole?.replace('_', ' ')}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-500">Content Mode:</span>
                     <select 
                       className="bg-white border border-slate-200 text-sm font-medium rounded-lg px-3 py-1.5 outline-hidden focus:ring-2 focus:ring-violet-500 shadow-sm text-slate-700"
-                      value={state.activePathId || ''}
-                      onChange={(e) => dispatch({ type: 'SWITCH_PATH', payload: e.target.value })}
+                      value={state.goal?.contentMode || ''}
+                      onChange={(e) => handleSelectContentMode(e.target.value)}
                     >
-                      {activePathsList.map(p => (
-                        <option key={p.id} value={p.id}>{p.goal?.targetRole?.replace('_', ' ')}</option>
-                      ))}
+                      <option value="mentor">Mentor-Led</option>
+                      <option value="opensource">Open Source</option>
                     </select>
                   </div>
-                )}
+                </div>
               </div>
 
               <button 
@@ -214,7 +245,31 @@ const NavigatorDashboard = () => {
               transition={{ delay: 0.4 }}
               className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8"
             >
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 space-y-6">
+                {rootCauses.length > 0 && (
+                  <div className="bg-rose-50 border border-rose-200 p-5 rounded-2xl shadow-sm flex items-start gap-4">
+                    <TrendingDown className="text-rose-500 shrink-0 mt-1" size={24} />
+                    <div>
+                      <h3 className="text-lg font-bold text-rose-900 mb-1">Root Cause Identified</h3>
+                      <p className="text-rose-700 mb-3 text-sm">
+                        You are struggling with <strong>{currentNode.nodeRef?.label || currentNode.skillId}</strong> because you have foundational gaps in its prerequisites. We recommend addressing these root causes first.
+                      </p>
+                      <ul className="space-y-2">
+                        {rootCauses.map(rc => (
+                          <li key={rc.skillId} className="flex items-center gap-2 text-sm font-medium text-rose-800 bg-white/50 px-3 py-2 rounded-lg">
+                            <AlertCircle size={16} /> {rc.skillName} (Gap: {rc.gap}%)
+                          </li>
+                        ))}
+                      </ul>
+                      <button 
+                        onClick={() => dispatch({ type: 'TRIGGER_RECOVERY', payload: currentNode.skillId })}
+                        className="mt-4 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm"
+                      >
+                        Start Remediation Path
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <NextActionCard 
                   currentNode={currentNode} 
                   onStart={handleStartNextAction} 

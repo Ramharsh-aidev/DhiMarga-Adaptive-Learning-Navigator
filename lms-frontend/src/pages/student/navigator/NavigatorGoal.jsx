@@ -21,10 +21,10 @@ const NavigatorGoal = () => {
       const goal = await aiService.parseGoal(input);
       
       // 2. Dispatch to context
-      dispatch({ type: 'SET_GOAL', payload: { ...goal, forceNew: true } });
+      await dispatch({ type: 'SET_GOAL', payload: { ...goal, forceNew: true } });
       
       // 3. Add initial chat message
-      dispatch({
+      await dispatch({
         type: 'ADD_CHAT_MESSAGE',
         payload: {
           id: Date.now().toString(),
@@ -34,7 +34,7 @@ const NavigatorGoal = () => {
       });
       
       // 4. Navigate to canvas plan
-      navigate('/student/navigator/plan');
+      navigate('/student/navigator/plan', { state: { newPath: true } });
     } catch (error) {
       console.error(error);
       setIsProcessing(false);
