@@ -13,8 +13,12 @@ const NavigatorPlan = () => {
   const [chatOpen, setChatOpen] = useState(true);
   const [viewMode, setViewMode] = useState('mindmap');
 
-  if (!state.goal || !state.capabilityGraph) {
+  if (!state.goal) {
     return <Navigate to="/student/navigator" />;
+  }
+
+  if (!state.capabilityGraph) {
+    return <div className="flex items-center justify-center h-screen bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div></div>;
   }
 
   // Calculate current hours

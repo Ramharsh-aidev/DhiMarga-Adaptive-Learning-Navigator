@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useNavigator } from '../../../context/NavigatorContext';
 import ReadinessGauge from '../../../components/ui/student/navigator/ReadinessGauge';
 import LearningDebtCard from '../../../components/ui/student/navigator/LearningDebtCard';
@@ -23,7 +24,7 @@ const NavigatorDashboard = () => {
     }
   }, [state.pathStatus, navigate]);
 
-  const readiness = calculateGoalReadiness(state.learnerState, state.capabilityGraph);
+  const readiness = calculateGoalReadiness(state.learnerState, state.capabilityGraph, state.currentPath);
   const debtItems = calculateLearningDebt(state.learnerState, state.capabilityGraph);
   
   // Stats calculation
@@ -52,6 +53,19 @@ const NavigatorDashboard = () => {
 
   if (!state.goal) return <Navigate to="/student/navigator" />;
   if (state.pathStatus === 'planning') return <Navigate to="/student/navigator/plan" />;
+  
+  if (state.capabilityGraph === null) return <div className="flex items-center justify-center h-full bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div></div>;
+
+  if (state.capabilityGraph?.error) return (
+    <div className="flex items-center justify-center h-full bg-gray-50 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md text-center">
+        <AlertCircle size={48} className="mx-auto text-rose-500 mb-4" />
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Oops, something went wrong</h2>
+        <p className="text-slate-500 mb-6">We couldn't load your learning path data. This might happen if the path structure is being updated.</p>
+        <button onClick={() => navigate('/student/paths')} className="px-6 py-2 bg-violet-600 text-white rounded-xl font-bold">Go to My Paths</button>
+      </div>
+    </div>
+  );
 
   // Determine current node (first unverified node in path order)
   const currentNode = state.currentPath.find(n => {
@@ -115,8 +129,12 @@ const NavigatorDashboard = () => {
               </span>
             </div>
 
-            {/* Top Progress Strip */}
-            <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 p-5 mb-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 p-5 mb-8"
+            >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Path Progress</span>
                 <span className="text-sm font-bold text-violet-600 bg-violet-50 px-3 py-1 rounded-full">{stats.verified} of {stats.total} skills verified</span>
@@ -127,9 +145,14 @@ const NavigatorDashboard = () => {
                   style={{ width: `${stats.total > 0 ? (stats.verified / stats.total) * 100 : 0}%` }}
                 />
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex justify-between items-end mb-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex justify-between items-end mb-8"
+            >
               <div className="flex flex-col gap-2">
                 <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Active Journey</h1>
                 
@@ -156,10 +179,15 @@ const NavigatorDashboard = () => {
               >
                 <MessageSquare size={18} className="text-violet-500" /> Ask AI Assistant
               </button>
-            </div>
+            </motion.div>
             
             {/* Status Pills */}
-            <div className="flex flex-wrap gap-4 mb-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex flex-wrap gap-4 mb-8"
+            >
               <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md px-5 py-2.5 rounded-xl shadow-sm border border-green-100 text-sm">
                 <CheckCircle2 size={18} className="text-green-600" />
                 <span className="font-semibold text-slate-800">{stats.verified} Verified</span>
@@ -178,9 +206,14 @@ const NavigatorDashboard = () => {
                 <Clock size={18} className="text-slate-500" />
                 <span className="font-semibold text-slate-700">~{Math.round(stats.totalHours)}h Estimated</span>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8"
+            >
               <div className="lg:col-span-2">
                 <NextActionCard 
                   currentNode={currentNode} 
@@ -191,7 +224,7 @@ const NavigatorDashboard = () => {
               <div>
                 <ReadinessGauge readiness={readiness} />
               </div>
-            </div>
+            </motion.div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
               <div className="lg:col-span-2 bg-white/80 backdrop-blur-md rounded-3xl shadow-sm border border-slate-200 p-8">
