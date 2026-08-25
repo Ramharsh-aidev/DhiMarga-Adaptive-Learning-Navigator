@@ -5,7 +5,7 @@ import HeroSection from '../components/ui/home/HeroSection';
 import FeaturesSection from '../components/ui/home/FeaturesSection';
 import HowItWorksSection from '../components/ui/home/HowItWorksSection';
 import TestimonialsSection from '../components/ui/home/TestimonialsSection';
-import CTASection from '../components/ui/home/CTASection';
+import FAQSection from '../components/ui/home/FAQSection';
 import Footer from '../components/layout/Footer';
 import FloatingShapes from '../components/common/FloatingShapes';
 import { PageLoader } from '../components/common/Spinner';
@@ -15,7 +15,7 @@ const Home = () => {
 
   return (
     <PageLoader text="DhiMārga" delay={2000}>
-      <div className="min-h-screen bg-linear-to-br from-indigo-50/40 via-purple-50/30 to-pink-50/35 relative overflow-hidden">
+      <div className="min-h-screen bg-slate-50 relative overflow-hidden">
         <FloatingShapes />
         {/* Use Navbar if authenticated, otherwise use Header */}
         {isAuthenticated ? <Navbar /> : <Header />}
@@ -23,7 +23,7 @@ const Home = () => {
         <FeaturesSection />
         <HowItWorksSection />
         <TestimonialsSection />
-        <CTASection />
+        <FAQSection />
         <Footer />
       </div>
     </PageLoader>
