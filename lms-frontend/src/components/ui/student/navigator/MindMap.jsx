@@ -219,10 +219,31 @@ const MindMap = () => {
   const containerRef = useRef(null);
   
   const treeData = useMemo(() => {
+    if (!state.capabilityGraph || state.capabilityGraph.error) return null;
     return buildDepTree(state.capabilityGraph, state.goal?.targetRole?.replace('_', ' '));
   }, [state.capabilityGraph, state.goal]);
 
-  if (!treeData) return <div className="text-gray-500">Loading Mind Map...</div>;
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!treeData) setLoadingTimeout(true);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [treeData]);
+
+  if (!treeData) {
+     if (loadingTimeout) {
+         return (
+             <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-50/50">
+                 <AlertCircle className="mx-auto mb-4 text-slate-400" size={48} />
+                 <h3 className="text-lg font-bold text-slate-700 mb-2">No Mind Map Available</h3>
+                 <p className="text-slate-500 max-w-sm">We couldn't generate a visual mind map for this specific path. Please use the List View instead to see your sequence.</p>
+             </div>
+         );
+     }
+     return <div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div></div>;
+  }
 
   const handleWheel = (e) => {
     if (e.deltaY < 0) {

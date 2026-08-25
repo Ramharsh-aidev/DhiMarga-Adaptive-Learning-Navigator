@@ -1,9 +1,28 @@
 import React, { useMemo } from 'react';
 import { useNavigator } from '../../../../context/NavigatorContext';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.02 }
+  }
+};
+
+const itemVariants = {
+  hidden: { scale: 0, opacity: 0 },
+  show: { scale: 1, opacity: 1, transition: { type: 'spring', stiffness: 300 } }
+};
 
 const LearningCalendar = ({ path }) => {
-  const learningDates = path?.learningDates || [];
+  const learningDates = useMemo(() => {
+    if (!path?.nodes) return [];
+    return path.nodes
+      .filter(n => n.completedAt)
+      .map(n => new Date(n.completedAt).toISOString().split('T')[0]);
+  }, [path?.nodes]);
 
   const { calendarGrid, totalDays } = useMemo(() => {
     // Generate last 12 weeks of data
@@ -53,11 +72,17 @@ const LearningCalendar = ({ path }) => {
         </span>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar justify-end">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar justify-end"
+      >
         {calendarGrid.map((week, wIdx) => (
           <div key={wIdx} className="flex flex-col gap-1">
             {week.map((day, dIdx) => (
-              <div 
+              <motion.div 
+                variants={itemVariants}
                 key={`${wIdx}-${dIdx}`}
                 title={day.date}
                 className={`w-3.5 h-3.5 rounded-sm ${
@@ -67,11 +92,12 @@ const LearningCalendar = ({ path }) => {
                       ? 'bg-violet-500 shadow-[0_0_4px_rgba(124,58,237,0.5)] ring-1 ring-violet-400' 
                       : 'bg-slate-100 border border-slate-200'
                 }`}
+                whileHover={!day.isFuture ? { scale: 1.5, zIndex: 10 } : {}}
               />
             ))}
           </div>
         ))}
-      </div>
+      </motion.div>
       <div className="mt-2 text-xs text-slate-400 flex justify-end items-center gap-2 font-medium">
         <span>Less</span>
         <div className="flex gap-1">

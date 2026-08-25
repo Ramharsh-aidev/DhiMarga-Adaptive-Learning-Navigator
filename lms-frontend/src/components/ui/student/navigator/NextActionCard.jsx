@@ -73,25 +73,29 @@ const NextActionCard = ({ currentNode, onStart, onSkip }) => {
             <p className="text-sm text-slate-600 font-bold text-center mb-1">
               Ready for the test?
             </p>
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onStart}
-              className="w-20 h-20 bg-linear-to-r from-violet-600 via-purple-500 to-pink-500 text-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.3)] hover:shadow-[0_8px_40px_rgba(124,58,237,0.5)] transition-shadow shrink-0 group"
-              title="Start Assessment"
-            >
-              <Play size={32} className="ml-2 group-hover:text-violet-100 transition-colors" fill="currentColor" />
-            </motion.button>
-            
-            {onSkip && (
-              <button 
-                onClick={onSkip}
-                className="mt-2 text-slate-500 hover:text-violet-600 text-sm font-bold flex items-center gap-1.5 transition-colors px-4 py-2 rounded-lg hover:bg-violet-50"
-                title="I already know this"
+            <div className="relative">
+              <motion.div
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.5, 0, 0.5]
+                }}
+                transition={{
+                  duration: 2,
+                  ease: "easeInOut",
+                  repeat: Infinity,
+                }}
+                className="absolute inset-0 rounded-full bg-violet-400 blur-md pointer-events-none"
+              />
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onStart}
+                className="relative w-20 h-20 bg-linear-to-r from-violet-600 via-purple-500 to-pink-500 text-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.3)] hover:shadow-[0_8px_40px_rgba(124,58,237,0.5)] transition-shadow shrink-0 group z-10"
+                title="Start Assessment"
               >
-                <CheckCircle2 size={16} /> Mark as Known
-              </button>
-            )}
+                <Play size={32} className="ml-2 group-hover:text-violet-100 transition-colors" fill="currentColor" />
+              </motion.button>
+            </div>
           </div>
 
         </div>
