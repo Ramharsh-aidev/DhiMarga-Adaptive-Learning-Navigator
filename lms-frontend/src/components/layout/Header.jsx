@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Code2, Menu, X } from 'lucide-react';
+import { BookOpen, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
 const Header = () => {
@@ -10,32 +10,31 @@ const Header = () => {
   const navItems = [
     { name: 'Features', href: '#features' },
     { name: 'How It Works', href: '#how-it-works' },
-    { name: 'About', href: '#about' },
+    { name: 'Testimonials', href: '#testimonials' },
   ];
 
   return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-50 bg-white/60 backdrop-blur-xl border-b border-indigo-200/30 shadow-lg shadow-indigo-100/50"
+      transition={{ duration: 0.5, type: 'spring', stiffness: 100, damping: 20 }}
+      className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-2xl border-b border-violet-100/50 shadow-sm shadow-violet-100/50"
     >
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
             <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.5 }}
-              className="w-10 h-10 bg-linear-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg"
+              whileHover={{ rotate: 10, scale: 1.05 }}
+              className="w-10 h-10 bg-linear-to-br from-violet-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-violet-500/20"
             >
-              <Code2 className="w-6 h-6 text-white" />
+              <BookOpen className="w-5 h-5 text-white" strokeWidth={2.5} />
             </motion.div>
             <div className="flex flex-col">
-              <span className="text-xl lg:text-2xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="text-xl lg:text-2xl font-extrabold bg-linear-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent tracking-tight">
                 DhiMārga
               </span>
-              <span className="text-xs text-gray-500 -mt-1">Internship Learning</span>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest -mt-1 hidden sm:block">Adaptive Engine</span>
             </div>
           </Link>
 
@@ -45,10 +44,10 @@ const Header = () => {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group"
+                className="text-slate-600 hover:text-violet-700 font-bold text-sm tracking-wide transition-colors relative group"
               >
                 {item.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-indigo-600 transition-all group-hover:w-full"></span>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-violet-600 transition-all group-hover:w-full rounded-full"></span>
               </a>
             ))}
           </nav>
@@ -59,24 +58,24 @@ const Header = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/login')}
-              className="px-6 py-2 text-gray-700 hover:text-indigo-600 font-medium transition-colors"
+              className="px-6 py-2.5 text-slate-700 hover:text-violet-700 font-bold text-sm tracking-wide transition-colors"
             >
               Sign In
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(99, 102, 241, 0.3)' }}
+              whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(124, 58, 237, 0.2)' }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/register')}
-              className="px-6 py-2.5 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+              className="px-6 py-2.5 bg-linear-to-r from-violet-600 to-pink-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all tracking-wide text-sm"
             >
-              Get Started
+              Get Started Free
             </motion.button>
           </div>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-gray-700 hover:text-indigo-600"
+            className="lg:hidden p-2 text-slate-700 hover:text-violet-600 rounded-lg hover:bg-slate-50 transition-colors"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -88,7 +87,7 @@ const Header = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden py-4 border-t border-gray-200"
+            className="lg:hidden py-4 border-t border-slate-100"
           >
             <nav className="flex flex-col space-y-4">
               {navItems.map((item) => (
@@ -96,18 +95,18 @@ const Header = () => {
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-gray-700 hover:text-indigo-600 font-medium transition-colors"
+                  className="text-slate-700 hover:text-violet-600 font-bold px-4 py-2 transition-colors"
                 >
                   {item.name}
                 </a>
               ))}
-              <div className="flex flex-col space-y-2 pt-4 border-t border-gray-200">
+              <div className="flex flex-col space-y-3 pt-4 px-4 border-t border-slate-100">
                 <button
                   onClick={() => {
                     navigate('/login');
                     setMobileMenuOpen(false);
                   }}
-                  className="px-6 py-2 text-gray-700 hover:text-indigo-600 font-medium transition-colors text-left"
+                  className="w-full px-6 py-3 text-slate-700 hover:text-violet-600 font-bold transition-colors text-center border border-slate-200 rounded-xl"
                 >
                   Sign In
                 </button>
@@ -116,9 +115,9 @@ const Header = () => {
                     navigate('/register');
                     setMobileMenuOpen(false);
                   }}
-                  className="px-6 py-2.5 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold shadow-lg"
+                  className="w-full px-6 py-3 bg-linear-to-r from-violet-600 to-pink-600 text-white rounded-xl font-bold shadow-md"
                 >
-                  Get Started
+                  Get Started Free
                 </button>
               </div>
             </nav>

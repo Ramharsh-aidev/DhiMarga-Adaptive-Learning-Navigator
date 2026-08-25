@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Code2, Github, Twitter, Linkedin, Mail, Heart } from 'lucide-react';
+import { BookOpen, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
+import FlipText from '../ui/FlipText';
+import SocialFlipButton from '../ui/SocialFlipButton';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -32,64 +34,36 @@ const Footer = () => {
     ],
   };
 
-  const socialLinks = [
-    { icon: Github, href: 'https://github.com/ramharsh-aidev', label: 'GitHub' },
-    { icon: Twitter, href: 'https://x.com/ramharsh-aidev', label: 'Twitter' },
-    { icon: Linkedin, href: 'https://linkedin.com/in/ramharsh-sanjay-dandekar', label: 'LinkedIn' },
-    { icon: Mail, href: 'mailto:support@dhimarga.com', label: 'Email' },
-  ];
-
   return (
-    <footer id="about" className="bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-300">
-      <div className="container mx-auto px-4 lg:px-8 py-12 lg:py-16">
-        {/* Main Footer Content */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 lg:gap-12 mb-12">
-          {/* Brand Section */}
-          <div className="col-span-2">
-            <Link to="/" className="flex items-center space-x-3 mb-4 group">
-              <motion.div
-                whileHover={{ rotate: 360 }}
-                transition={{ duration: 0.5 }}
-                className="w-10 h-10 bg-linear-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg"
-              >
-                <Code2 className="w-6 h-6 text-white" />
-              </motion.div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-white">DhiMārga</span>
-                <span className="text-xs text-gray-400">Internship Learning</span>
-              </div>
-            </Link>
-            <p className="text-gray-400 mb-6 max-w-sm">
-              Empowering the next generation of developers through hands-on learning, 
-              expert mentorship, and real-world projects.
-            </p>
-            
-            {/* Social Links */}
-            <div className="flex space-x-4">
-              {socialLinks.map((social) => (
-                <motion.a
-                  key={social.label}
-                  href={social.href}
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-indigo-600 transition-colors"
-                  aria-label={social.label}
-                >
-                  <social.icon className="w-5 h-5" />
-                </motion.a>
-              ))}
-            </div>
+    <footer id="about" className="bg-slate-950 text-slate-300 border-t border-slate-800">
+      <div className="container mx-auto px-4 lg:px-8 py-16 lg:py-20">
+        
+        {/* Animated Banner Area */}
+        <div className="flex flex-col items-center justify-center mb-16 text-center space-y-6">
+          <div className="text-4xl md:text-5xl lg:text-7xl font-black tracking-tight text-white flex justify-center">
+             <FlipText duration={3} delay={0.1} separator="">
+                DhiMārga
+             </FlipText>
           </div>
+          <p className="text-slate-400 max-w-lg text-lg">
+             Empowering the next generation of developers through hands-on learning, expert mentorship, and real-world projects.
+          </p>
+          <div className="pt-6">
+             <SocialFlipButton />
+          </div>
+        </div>
 
+        {/* Main Footer Content */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 mb-16 border-t border-slate-800 pt-16">
           {/* Platform Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Platform</h4>
-            <ul className="space-y-3">
+            <h4 className="text-white font-bold mb-6 tracking-wide uppercase text-sm">Platform</h4>
+            <ul className="space-y-4">
               {footerLinks.platform.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-200"
+                    className="text-slate-400 hover:text-violet-400 transition-colors inline-block hover:translate-x-1 transform duration-300 font-medium"
                   >
                     {link.name}
                   </a>
@@ -100,13 +74,13 @@ const Footer = () => {
 
           {/* Company Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Company</h4>
-            <ul className="space-y-3">
+            <h4 className="text-white font-bold mb-6 tracking-wide uppercase text-sm">Company</h4>
+            <ul className="space-y-4">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-200"
+                    className="text-slate-400 hover:text-violet-400 transition-colors inline-block hover:translate-x-1 transform duration-300 font-medium"
                   >
                     {link.name}
                   </a>
@@ -117,13 +91,13 @@ const Footer = () => {
 
           {/* Support Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Support</h4>
-            <ul className="space-y-3">
+            <h4 className="text-white font-bold mb-6 tracking-wide uppercase text-sm">Support</h4>
+            <ul className="space-y-4">
               {footerLinks.support.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-200"
+                    className="text-slate-400 hover:text-violet-400 transition-colors inline-block hover:translate-x-1 transform duration-300 font-medium"
                   >
                     {link.name}
                   </a>
@@ -132,41 +106,33 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Legal Links */}
+          {/* Legal Links & Newsletter */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Legal</h4>
-            <ul className="space-y-3">
+            <h4 className="text-white font-bold mb-6 tracking-wide uppercase text-sm">Legal</h4>
+            <ul className="space-y-4 mb-8">
               {footerLinks.legal.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-200"
+                    className="text-slate-400 hover:text-violet-400 transition-colors inline-block hover:translate-x-1 transform duration-300 font-medium"
                   >
                     {link.name}
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
-        </div>
-
-        {/* Newsletter Section */}
-        <div className="border-t border-gray-800 pt-8 mb-8">
-          <div className="max-w-md">
-            <h4 className="text-white font-semibold mb-2">Stay Updated</h4>
-            <p className="text-gray-400 text-sm mb-4">
-              Get the latest courses, updates, and learning tips delivered to your inbox.
-            </p>
-            <div className="flex gap-2">
+            
+            <h4 className="text-white font-bold mb-4 tracking-wide uppercase text-sm">Stay Updated</h4>
+            <div className="flex flex-col gap-3">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-indigo-500 text-white placeholder-gray-500"
+                className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:border-violet-500 text-white placeholder-slate-500 transition-colors"
               />
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-2 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full px-6 py-3 bg-linear-to-r from-violet-600 to-pink-600 text-white rounded-xl font-bold shadow-md"
               >
                 Subscribe
               </motion.button>
@@ -175,14 +141,22 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-400 text-sm text-center md:text-left">
-            &copy; {currentYear} DhiMārga. All rights reserved. Built with{' '}
-            <Heart className="inline w-4 h-4 text-red-500" /> by{' '}
-            <span className="text-indigo-400">Ramharsh</span>
+        <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center space-x-3 group">
+            <div className="w-8 h-8 bg-linear-to-br from-violet-600 to-pink-600 rounded-lg flex items-center justify-center shadow-md">
+              <BookOpen className="w-4 h-4 text-white" strokeWidth={2.5} />
+            </div>
+            <span className="text-xl font-extrabold text-white tracking-tight">DhiMārga</span>
+          </div>
+          
+          <p className="text-slate-500 text-sm font-medium text-center md:text-left">
+            &copy; {currentYear} DhiMārga. Built with{' '}
+            <Heart className="inline w-4 h-4 text-pink-500 mx-1" fill="currentColor" /> by{' '}
+            <span className="text-violet-400 font-bold">Ramharsh</span>
           </p>
+          
           <div className="flex items-center space-x-6">
-            <span className="text-gray-500 text-sm">Made with React + Vite + Tailwind</span>
+            <span className="text-slate-600 font-bold text-xs uppercase tracking-widest">Adaptive Engine</span>
           </div>
         </div>
       </div>

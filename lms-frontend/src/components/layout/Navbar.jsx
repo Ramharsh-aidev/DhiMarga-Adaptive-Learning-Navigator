@@ -185,9 +185,9 @@ const Navbar = ({ onMenuClick }) => {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200"
               >
-                {/* Avatar */}
-                <div className="w-10 h-10 bg-linear-to-br from-violet-500 to-purple-600 rounded-[14px] flex items-center justify-center text-white font-bold shadow-md">
-                  {user?.name?.charAt(0)?.toUpperCase()}
+                {/* Avatar Icon */}
+                <div className="w-10 h-10 bg-linear-to-br from-violet-100 to-pink-100 border border-violet-200 rounded-[14px] flex items-center justify-center shadow-xs">
+                  <User size={20} className="text-violet-600" />
                 </div>
 
                 {/* User Info */}
@@ -217,8 +217,8 @@ const Navbar = ({ onMenuClick }) => {
                     {/* User Info in Dropdown */}
                     <div className="p-5 bg-linear-to-br from-violet-50 to-purple-50 border-b border-slate-100">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-linear-to-br from-violet-500 to-purple-600 rounded-[14px] flex items-center justify-center text-white font-bold text-lg shadow-md">
-                          {user?.name?.charAt(0)?.toUpperCase()}
+                        <div className="w-12 h-12 bg-linear-to-br from-violet-100 to-pink-100 border border-violet-200 rounded-[14px] flex items-center justify-center shadow-xs">
+                          <User size={24} className="text-violet-600" />
                         </div>
                         <div>
                           <p className="font-bold text-slate-900 tracking-tight">{user?.name}</p>
