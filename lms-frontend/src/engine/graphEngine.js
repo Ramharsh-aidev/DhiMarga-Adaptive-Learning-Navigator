@@ -61,6 +61,7 @@ export const topologicalSort = (graph) => {
 };
 
 export const validatePathDependencies = (graph, path) => {
+  if (!graph || !graph.nodes) return { valid: true };
   // Returns true if every node in the path appears AFTER all its prerequisites
   const seen = new Set();
   

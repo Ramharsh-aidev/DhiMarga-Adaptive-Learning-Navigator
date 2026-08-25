@@ -5,11 +5,13 @@
 export const calculateLearningDebt = (learnerState, capabilityGraph) => {
   const debtItems = [];
   
+  if (!capabilityGraph || !capabilityGraph.nodes) return debtItems;
+
   // Find maximum dependency count in the graph to normalize impact
   let maxDependencyCount = 1;
   Object.values(capabilityGraph.nodes).forEach(node => {
     // Simple direct unlock count for prototype
-    if (node.unlocks.length > maxDependencyCount) {
+    if (node.unlocks && node.unlocks.length > maxDependencyCount) {
       maxDependencyCount = node.unlocks.length;
     }
   });
@@ -43,11 +45,17 @@ export const calculateLearningDebt = (learnerState, capabilityGraph) => {
   return debtItems.sort((a, b) => b.riskScore - a.riskScore);
 };
 
-export const calculateGoalReadiness = (learnerState, capabilityGraph) => {
+export const calculateGoalReadiness = (learnerState, capabilityGraph, currentPath) => {
   let earnedSum = 0;
   let possibleSum = 0;
 
-  Object.values(capabilityGraph.nodes).forEach(node => {
+  if (!capabilityGraph || !capabilityGraph.nodes) return 0;
+
+  const nodesToEvaluate = currentPath && currentPath.length > 0 
+    ? currentPath.map(p => capabilityGraph.nodes[p.skillId]).filter(Boolean)
+    : Object.values(capabilityGraph.nodes);
+
+  nodesToEvaluate.forEach(node => {
     const state = learnerState[node.id];
     const relevance = node.goalRelevance || 0.5;
     

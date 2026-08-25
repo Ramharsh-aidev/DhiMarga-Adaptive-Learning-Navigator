@@ -2,7 +2,6 @@
  * Fallback Goal Parser (Deterministic Keyword-based)
  * Used when AI is unavailable.
  */
-import { capabilityGraphs } from '../data/capabilityGraphs';
 
 export const parseGoalFallback = (inputText) => {
   const text = inputText.toLowerCase();
@@ -12,8 +11,6 @@ export const parseGoalFallback = (inputText) => {
   if (text.includes('full stack') || text.includes('web')) targetRole = 'fullstack_dev';
   if (text.includes('cloud') || text.includes('devops')) targetRole = 'cloud_engineer';
 
-  const graph = capabilityGraphs[targetRole];
-  
   let deadline = '12 weeks';
   const weekMatch = text.match(/(\d+)\s*weeks?/);
   if (weekMatch) deadline = `${weekMatch[1]} weeks`;
