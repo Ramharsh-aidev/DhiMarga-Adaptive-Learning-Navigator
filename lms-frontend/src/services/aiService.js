@@ -144,9 +144,15 @@ ${input}<|im_end|>
 
   let text = response.data[0].generated_text;
   text = text.substring(text.lastIndexOf('<|im_start|>assistant') + 21).trim();
-  text = text.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  let cleaned = text.trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    cleaned = jsonMatch[0];
+  } else {
+    cleaned = cleaned.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  }
 
-  const parsed = JSON.parse(text);
+  const parsed = JSON.parse(cleaned);
   const weeks = parseInt(parsed.deadline) || 12;
   parsed.totalBudgetHours = weeks * (parsed.availableHoursPerWeek || 10);
   return parsed;
@@ -200,7 +206,14 @@ User input: ${input}`;
     contents: [{ parts: [{ text: prompt }] }]
   });
 
-  const cleaned = text.trim().replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  let cleaned = text.trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    cleaned = jsonMatch[0];
+  } else {
+    cleaned = cleaned.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  }
+  
   const parsed = JSON.parse(cleaned);
   const weeks = parseInt(parsed.deadline) || 12;
   parsed.totalBudgetHours = weeks * (parsed.availableHoursPerWeek || 10);
