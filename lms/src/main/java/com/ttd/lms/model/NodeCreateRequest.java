@@ -11,4 +11,5 @@ public class NodeCreateRequest {
     private String personalizationNote;
     private Integer sequenceOrder;
     private BigDecimal estimatedHours;
+    private String selectedResource;
 }

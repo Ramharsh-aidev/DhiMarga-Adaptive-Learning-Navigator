@@ -128,6 +128,7 @@ public class PathService {
             .personalizationNote(req.getPersonalizationNote())
             .sequenceOrder(req.getSequenceOrder())
             .status("upcoming")
+            .selectedResource(req.getSelectedResource())
             .build();
         return userPathNodeRepository.save(newNode);
     }
