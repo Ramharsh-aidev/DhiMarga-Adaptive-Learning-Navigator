@@ -26,10 +26,12 @@ const NavigatorSummaryWidget = () => {
       } else if (lState?.status === 'gap') {
         weakSkills.push(node);
       }
-      
-      if (node.status === 'current' && !nextSkill) {
-        nextSkill = node;
-      }
+    });
+    
+    // Find next skill: first unverified node
+    nextSkill = currentPath.find(n => {
+      const ls = learnerState[n.skillId];
+      return !ls || ls.status !== 'verified';
     });
 
     const totalSkills = currentPath.length;

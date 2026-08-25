@@ -24,8 +24,10 @@ const MiniMindMap = ({ onExpand }) => {
       <div className="flex items-center justify-start w-full overflow-hidden pb-2 pt-2">
         {pathItems.map((node, idx) => {
           const isMastered = learnerState[node.skillId]?.status === 'verified';
-          const isCurrent = node.status === 'current';
           const isGap = learnerState[node.skillId]?.status === 'gap';
+          
+          const firstUnverified = currentPath.find(n => !learnerState[n.skillId] || learnerState[n.skillId].status !== 'verified');
+          const isCurrent = firstUnverified && firstUnverified.skillId === node.skillId;
 
           let bgColor = 'bg-slate-100 border-slate-200';
           let textColor = 'text-slate-500';
@@ -51,7 +53,7 @@ const MiniMindMap = ({ onExpand }) => {
             <React.Fragment key={node.skillId}>
               <div className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium ${bgColor} ${textColor} transition-all`}>
                 <Icon size={16} className={iconColor} />
-                <span className="max-w-[100px] truncate">{node.label}</span>
+                <span className="max-w-[100px] truncate">{node.nodeRef?.label || node.label || node.skillId}</span>
               </div>
               {idx < pathItems.length - 1 && (
                 <div className="shrink-0 h-[2px] w-3 bg-slate-300" />

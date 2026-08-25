@@ -135,10 +135,16 @@ const CanvasNode = ({ item, isDraggable = false, isTreeMode = false }) => {
               </h4>
               {isVerified && <Icon size={16} className="text-green-500 shrink-0" />}
               {isGap && <Icon size={16} className="text-rose-500 shrink-0" />}
-              {isUserAdded && (
-                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 font-bold border border-violet-200">Added</span>
+              {(isUserAdded || item.isAiInjected) && (
+                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 font-bold border border-violet-200">Personalized</span>
               )}
             </div>
+            
+            {item.isAiInjected && item.personalizationNote && (
+              <p className="text-xs text-violet-600 mt-1 mb-1 font-medium bg-violet-50 px-2 py-1 rounded-md border border-violet-100 inline-block">
+                ✨ {item.personalizationNote}
+              </p>
+            )}
             
             <div className="flex items-center gap-3 text-xs opacity-80 mt-1.5 font-medium">
               <span className="bg-white/60 px-2 py-1 rounded-md">{nodeRef?.category || 'Topic'}</span>
