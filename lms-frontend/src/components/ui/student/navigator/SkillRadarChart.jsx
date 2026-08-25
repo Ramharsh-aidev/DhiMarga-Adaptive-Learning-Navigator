@@ -1,29 +1,31 @@
 import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigator } from '../../../../context/NavigatorContext';
 
-const SkillRadarChart = ({ path, width = 300, height = 300 }) => {
+const SkillRadarChart = ({ path, width = 300, height = 300, activeSkillId }) => {
   const chartData = useMemo(() => {
-    if (!path || !path.capabilityGraph || !path.learnerState) return [];
+    if (!path || !path.nodes) return [];
 
     const categories = {};
-    const nodes = path.capabilityGraph.nodes || {};
+    const nodes = path.nodes;
     
     // Group skills by category
-    Object.keys(nodes).forEach(nodeId => {
-      const node = nodes[nodeId];
-      const cat = node.category || 'General';
+    nodes.forEach(node => {
+      const cat = node.graphNode?.category || 'General';
       
-      if (!categories[cat]) categories[cat] = { total: 0, count: 0 };
+      if (!categories[cat]) categories[cat] = { total: 0, count: 0, nodeIds: [] };
       
-      const score = path.learnerState[nodeId]?.masteryScore || 0;
+      const score = node.masteryScore || 0;
       categories[cat].total += score;
       categories[cat].count += 1;
+      categories[cat].nodeIds.push(node.skillId);
     });
 
     // Calculate averages
     return Object.keys(categories).map(cat => ({
       category: cat,
-      score: Math.round(categories[cat].total / categories[cat].count)
+      score: Math.round(categories[cat].total / categories[cat].count),
+      nodeIds: categories[cat].nodeIds
     }));
   }, [path]);
 
@@ -93,11 +95,15 @@ const SkillRadarChart = ({ path, width = 300, height = 300 }) => {
         })}
 
         {/* Data Polygon */}
-        <polygon
+        <motion.polygon
           points={polygonPoints}
           fill="rgba(124, 58, 237, 0.2)"
           stroke="#7c3aed"
           strokeWidth="2"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+          style={{ transformOrigin: "center" }}
         />
 
         {/* Data Points & Labels */}
@@ -109,15 +115,26 @@ const SkillRadarChart = ({ path, width = 300, height = 300 }) => {
           if (labelP.x > cx + 10) textAnchor = "start";
           if (labelP.x < cx - 10) textAnchor = "end";
 
+          const isActiveCategory = activeSkillId && d.nodeIds.includes(activeSkillId);
+
           return (
             <g key={`point-${i}`}>
-              <circle cx={p.x} cy={p.y} r="4" fill="#7c3aed" />
+              <motion.circle 
+                cx={p.x} cy={p.y} 
+                r={isActiveCategory ? "6" : "4"} 
+                fill="#7c3aed" 
+                animate={{ 
+                  scale: isActiveCategory ? [1, 1.3, 1] : 1,
+                  filter: isActiveCategory ? "drop-shadow(0px 0px 4px rgba(124, 58, 237, 0.8))" : "none"
+                }}
+                transition={{ repeat: isActiveCategory ? Infinity : 0, duration: 1.5 }}
+              />
               <text
                 x={labelP.x}
                 y={labelP.y}
                 textAnchor={textAnchor}
                 dominantBaseline="middle"
-                className="text-[10px] font-medium fill-slate-600"
+                className={`text-[10px] transition-all ${isActiveCategory ? 'font-extrabold fill-violet-700' : 'font-medium fill-slate-600'}`}
               >
                 {d.category}
               </text>
@@ -126,7 +143,7 @@ const SkillRadarChart = ({ path, width = 300, height = 300 }) => {
                 y={labelP.y + 12}
                 textAnchor={textAnchor}
                 dominantBaseline="middle"
-                className="text-[10px] font-bold fill-violet-600"
+                className={`text-[10px] font-bold ${isActiveCategory ? 'fill-violet-700' : 'fill-violet-600'}`}
               >
                 {d.score}%
               </text>

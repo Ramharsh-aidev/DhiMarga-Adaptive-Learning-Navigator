@@ -8,11 +8,12 @@ const NavigatorSummaryWidget = () => {
   const { state } = useNavigator();
   const navigate = useNavigate();
 
-  // Guard if no goal is set
-  if (!state.goal) return null;
-
   const stats = useMemo(() => {
-    const { currentPath, learnerState } = state;
+    if (!state || !state.goal) {
+      return { completedSkills: 0, totalSkills: 0, progressPercentage: 0, weakSkills: [], nextSkill: null };
+    }
+
+    const { currentPath = [], learnerState = {} } = state;
     
     let completedSkills = 0;
     let weakSkills = [];
@@ -41,7 +42,10 @@ const NavigatorSummaryWidget = () => {
       weakSkills,
       nextSkill
     };
-  }, [state.currentPath, state.learnerState]);
+  }, [state]);
+
+  // Guard if no goal is set
+  if (!state || !state.goal) return null;
 
   const { progressPercentage, completedSkills, totalSkills, weakSkills, nextSkill } = stats;
 
@@ -116,7 +120,7 @@ const NavigatorSummaryWidget = () => {
                     <Target size={16} />
                     <h4>Up Next</h4>
                   </div>
-                  <p className="text-sm font-bold text-slate-900 truncate">{nextSkill.label}</p>
+                  <p className="text-sm font-bold text-slate-900 truncate">{nextSkill.nodeRef?.label || nextSkill.label || nextSkill.skillId}</p>
                   <p className="text-xs text-violet-600 mt-1 font-medium">Ready to learn</p>
                 </div>
               ) : (

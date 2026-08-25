@@ -2,21 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { useNavigator } from '../../../../context/NavigatorContext';
 import { StickyNote, Check } from 'lucide-react';
 
-const SkillNotes = ({ path }) => {
+const SkillNotes = ({ path, externalActiveSkillId }) => {
   const { dispatch } = useNavigator();
   const [activeSkillId, setActiveSkillId] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const notes = path?.notes || {};
-  const currentPath = path?.currentPath || [];
+  const currentPath = path?.nodes || [];
+
+  // Sync with external active skill if provided
+  useEffect(() => {
+    if (externalActiveSkillId) {
+      setActiveSkillId(externalActiveSkillId);
+    }
+  }, [externalActiveSkillId]);
 
   // Default to the first skill in the path if none selected
   useEffect(() => {
-    if (!activeSkillId && currentPath.length > 0) {
+    if (!activeSkillId && !externalActiveSkillId && currentPath.length > 0) {
       setActiveSkillId(currentPath[0].skillId);
     }
-  }, [currentPath, activeSkillId]);
+  }, [currentPath, activeSkillId, externalActiveSkillId]);
 
   useEffect(() => {
     if (activeSkillId) {

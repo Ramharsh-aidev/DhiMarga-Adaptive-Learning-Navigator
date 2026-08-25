@@ -95,7 +95,7 @@ const MilestonesPanel = ({ path }) => {
                   {m.title}
                 </p>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  By {new Date(m.targetDate).toLocaleDateString()}
+                  Added on {new Date(m.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </li>

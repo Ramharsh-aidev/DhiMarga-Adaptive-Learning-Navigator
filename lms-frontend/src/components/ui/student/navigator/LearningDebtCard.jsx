@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { AlertCircle, Target, Zap } from 'lucide-react';
 
 const LearningDebtCard = ({ debtItems = [] }) => {
@@ -13,14 +14,28 @@ const LearningDebtCard = ({ debtItems = [] }) => {
     );
   }
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+
+  const itemAnim = {
+    hidden: { opacity: 0, x: -20 },
+    show: { opacity: 1, x: 0 }
+  };
+
   return (
-    <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
         <AlertCircle size={16} className="text-rose-500" /> Learning Debt
       </h3>
-      <div className="space-y-3">
+      <motion.div variants={container} initial="hidden" animate="show" className="space-y-3">
         {debtItems.map((item) => (
-          <div key={item.skillId} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+          <motion.div 
+            variants={itemAnim}
+            key={item.skillId} 
+            className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-rose-200 transition-colors"
+          >
             <div>
               <p className="text-sm font-bold text-slate-800">{item.skillName}</p>
               <p className="text-xs text-slate-500 font-medium">Gap: {item.gap}% below threshold</p>
@@ -28,9 +43,9 @@ const LearningDebtCard = ({ debtItems = [] }) => {
             <div className={`px-2 py-1 text-xs font-bold rounded ${item.severity === 'HIGH' ? 'bg-rose-100 text-rose-700' : item.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
               {item.severity}
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 };
