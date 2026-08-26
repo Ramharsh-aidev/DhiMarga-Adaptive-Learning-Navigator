@@ -1,0 +1,48 @@
+# Render Blueprint for LMS Backend
+
+services:
+  - type: web
+    name: lms-backend
+    runtime: docker
+    plan: free  # Change to 'starter' or 'standard' for production
+    region: singapore  # Choose your preferred region
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    
+    # Environment Variables (Set these in Render Dashboard)
+    envVars:
+      - key: DB_URL
+        sync: false  # Set manually in Render Dashboard
+      
+      - key: DB_USERNAME
+        sync: false  # Set manually in Render Dashboard
+      
+      - key: DB_PASSWORD
+        sync: false  # Set manually in Render Dashboard
+      
+      - key: JWT_SECRET
+        sync: false  # Set manually in Render Dashboard
+      
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false  # Set manually in Render Dashboard
+      
+      - key: CLOUDINARY_API_KEY
+        sync: false  # Set manually in Render Dashboard
+      
+      - key: CLOUDINARY_API_SECRET
+        sync: false  # Set manually in Render Dashboard
+      
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      
+      - key: PORT
+        value: 8080
+    
+    # Health Check
+    healthCheckPath: /actuator/health
+    
+    # Auto-deploy settings
+    autoDeploy: true
+    
+    # Scaling (Free tier: 1 instance, Paid: configure as needed)
+    numInstances: 1

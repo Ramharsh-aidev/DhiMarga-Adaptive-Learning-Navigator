@@ -31,4 +31,4 @@ npm-debug.log*
 .idea
 target
 
-lms-api-postman-collection.json
+# lms-api-postman-collection.json
