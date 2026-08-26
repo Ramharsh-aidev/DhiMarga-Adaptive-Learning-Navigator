@@ -41,7 +41,7 @@ const CourseView = () => {
   };
 
   const handleViewCertificate = () => {
-    navigate(`/student/certificates?courseId=${courseId}`);
+    navigate(`/student/credentials?courseId=${courseId}`);
   };
 
   if (loading) {

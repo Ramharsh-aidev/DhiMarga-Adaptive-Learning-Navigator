@@ -7,6 +7,12 @@ export const getMyCertificates = async () => {
   return response.data;
 };
 
+// Get all badges for a student
+export const getMyBadges = async () => {
+  const response = await api.get('/api/badges/my');
+  return response.data;
+};
+
 // Get certificate by ID
 export const getCertificateById = async (certificateId) => {
   const response = await api.get(API_ENDPOINTS.CERTIFICATE_BY_ID(certificateId));

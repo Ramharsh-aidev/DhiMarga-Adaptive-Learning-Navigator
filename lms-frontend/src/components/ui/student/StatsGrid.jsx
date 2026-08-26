@@ -31,7 +31,7 @@ const StatsGrid = ({ stats, navigatorStats }) => {
       change: stats.certificates > 0 ? 'Earned' : 'Complete courses',
       color: '#ec4899',
       bgColor: 'bg-pink-50',
-      onClick: () => navigate('/student/certificates')
+      onClick: () => navigate('/student/credentials')
     },
     {
       icon: Clock,
