@@ -54,6 +54,13 @@ public class User implements UserDetails {
     @Builder.Default
     private Integer level = 1;
 
+    @Column(name = "current_streak", nullable = false, columnDefinition = "integer default 0")
+    @Builder.Default
+    private Integer currentStreak = 0;
+
+    @Column(name = "last_active_date")
+    private java.time.LocalDate lastActiveDate;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

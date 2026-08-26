@@ -9,6 +9,9 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
+import com.itextpdf.layout.element.Image;
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.ttd.lms.entity.Certificate;
 import com.ttd.lms.entity.Course;
@@ -345,6 +348,26 @@ public class CertificateService {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(14)
                     .setMarginTop(10));
+
+            // Add Ramharsh's Signature
+            document.add(new Paragraph("Signature: Ramharsh")
+                    .setItalic()
+                    .setFontSize(18)
+                    .setFontColor(ColorConstants.DARK_GRAY)
+                    .setTextAlignment(TextAlignment.RIGHT)
+                    .setMarginTop(20));
+
+            // Add Stamp Image
+            try {
+                org.springframework.core.io.Resource resource = new org.springframework.core.io.ClassPathResource("static/images/certificate_stamp.jpg");
+                ImageData data = ImageDataFactory.create(resource.getURL());
+                Image stamp = new Image(data);
+                stamp.scaleToFit(100, 100);
+                stamp.setFixedPosition(pdfDoc.getDefaultPageSize().getWidth() - 150, 50); // Bottom right corner
+                document.add(stamp);
+            } catch (Exception imgEx) {
+                log.warn("Could not load certificate stamp image", imgEx);
+            }
 
             // Add footer
             document.add(new Paragraph("Learning Management System")
