@@ -92,3 +92,11 @@ export const saveUiState = async (uiState) => {
   });
   return res.data;
 };
+export const awardChallengerBadge = async (pathId) => {
+  try {
+    const res = await api.post(`/api/badges/challenger/${pathId}`);
+    return res.data;
+  } catch (e) {
+    console.error('Failed to award badge', e);
+  }
+};

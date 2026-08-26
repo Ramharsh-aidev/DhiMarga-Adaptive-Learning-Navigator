@@ -124,6 +124,54 @@ export const aiService = {
     }
     // Fallback deterministic questions
     return generateDeterministicQuestions(skillId, count);
+  },
+
+  generateAdaptiveQuestions: async (skillId, previousAnswers) => {
+    if (GEMINI_API_KEY) {
+      try {
+        console.log('[AI] generateAdaptiveQuestions → Gemini');
+        return await callGeminiAdaptiveQuestions(skillId, previousAnswers);
+      } catch (err) {
+        console.warn('[AI] Gemini adaptive questions failed:', err.message);
+      }
+    }
+    return generateDeterministicQuestions(skillId, 2); // Fallback
+  },
+
+  processSocraticTutoring: async (skillId, messages) => {
+    if (GEMINI_API_KEY) {
+      try {
+        console.log('[AI] processSocraticTutoring → Gemini');
+        return await callGeminiSocraticTutoring(skillId, messages);
+      } catch (err) {
+        console.warn('[AI] Gemini socratic tutoring failed:', err.message);
+      }
+    }
+    return {
+      reply: "Fallback: I see what you're saying. Do you want to try answering the assessment again?",
+      masteryReached: false
+    };
+  },
+  
+  critiquePath: async (state) => {
+    if (GEMINI_API_KEY) {
+      try {
+        console.log('[AI] critiquePath → Gemini');
+        return await callGeminiPathCritique(state);
+      } catch (err) {
+        console.warn('[AI] Gemini path critique failed:', err.message);
+      }
+    }
+    // Fallback stub
+    return {
+      currentAnalysis: "Your current path is balanced and focuses on the fundamentals.",
+      strengths: ["Strong foundation in basics"],
+      weaknesses: ["Might lack advanced project work early on"],
+      alternativeReasoning: "If you want to move faster, we can skip straight to projects.",
+      alternativePath: [
+        { id: "project_1", label: "Build a full-stack app", reason: "Direct application of skills" }
+      ]
+    };
   }
 };
 
@@ -432,6 +480,105 @@ Example format:
   return JSON.parse(cleaned);
 }
 
+async function callGeminiAdaptiveQuestions(skillId, previousAnswers) {
+  const prompt = `You are an Adaptive Learning AI. The user is struggling with the topic '${skillId}'.
+They answered the following questions incorrectly:
+${JSON.stringify(previousAnswers, null, 2)}
+
+Generate 3 EASIER, more foundational multiple-choice questions to help isolate exactly where their misunderstanding lies. Break the concept down into simpler parts.
+
+Return ONLY a JSON array of objects, with NO markdown fences:
+[
+  {
+    "id": "q_adaptive_1",
+    "type": "multiple_choice",
+    "question": "An easier question text here...",
+    "options": ["A", "B", "C", "D"],
+    "correctAnswer": "A",
+    "difficulty": "easy",
+    "explanation": "Why A is correct"
+  }
+]`;
+
+  const text = await callGemini({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: "application/json" }
+  });
+
+  let cleaned = text.trim().replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+
+  return JSON.parse(cleaned);
+}
+
+async function callGeminiSocraticTutoring(skillId, messages) {
+  const prompt = `You are a Socratic AI Tutor. The user is trying to master the skill '${skillId}'.
+Your goal is NOT to just give them the answer, but to guide them through questioning until they demonstrate a clear understanding of the core concept.
+
+Recent Conversation:
+${messages.map(m => `${m.role}: ${m.content}`).join('\n')}
+
+Based on their last response, evaluate if they have achieved mastery of this specific skill.
+Return ONLY valid JSON with no markdown fences:
+{
+  "reply": "Your next guiding question, hint, or congratulatory message",
+  "masteryReached": true | false
+}
+
+If they have demonstrated understanding, set masteryReached to true and congratulate them in the reply. Otherwise, keep it false and ask a guiding question.`;
+
+  const text = await callGemini({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: "application/json" }
+  });
+
+  let cleaned = text.trim().replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+
+  return JSON.parse(cleaned);
+}
+
+async function callGeminiPathCritique(state) {
+  const currentPath = state.currentPath?.map(n => n.nodeRef.label).join(' -> ') || "None";
+  const userGoal = state.goal?.targetRole || "Unknown";
+
+  const prompt = `You are a strict, senior Educational AI Architect.
+The user is learning to become a '${userGoal}'.
+Their current remaining learning path is: [${currentPath}].
+
+Your task is to CRITIQUE this path and propose a wildly different, but equally valid alternative strategy. 
+For example, if their current path is very theory-heavy, suggest a project-first, hyper-applied path. If their path is very linear, suggest a parallelized/interleaved path.
+
+Return ONLY a JSON object exactly matching this schema, with no markdown formatting:
+{
+  "currentAnalysis": "A short, sharp paragraph analyzing their current strategy.",
+  "strengths": ["string", "string"],
+  "weaknesses": ["string", "string"],
+  "alternativeReasoning": "A paragraph explaining why the alternative strategy you are proposing might be better or faster for them.",
+  "alternativePath": [
+    {
+      "id": "unique_skill_id_1",
+      "label": "Name of the new skill node",
+      "category": "theory | practice | assessment",
+      "reason": "Why this node is in the alternative path"
+    }
+  ]
+}`;
+
+  const text = await callGemini({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: "application/json" }
+  });
+
+  let cleaned = text.trim().replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+
+  return JSON.parse(cleaned);
+}
+
 async function callGeminiWeeklyPlan(context) {
   const currentPath = (context.currentPath || []).filter(n => {
     const status = context.learnerState[n.skillId]?.status;
@@ -478,7 +625,9 @@ Make the plan realistic. Don't schedule more hours in a day than reasonable. If 
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (jsonMatch) cleaned = jsonMatch[0];
   
-  return JSON.parse(cleaned);
+  const parsed = JSON.parse(cleaned);
+  parsed.generatedAt = new Date().getTime();
+  return parsed;
 }
 
 function generateDeterministicQuestions(skillId, count) {

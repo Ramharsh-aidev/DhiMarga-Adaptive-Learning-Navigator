@@ -14,6 +14,7 @@ import {
   getUiState,
   saveUiState,
   updateContentMode,
+  updatePath,
   getDashboardSummary
 } from '../services/navigatorService';
 
@@ -289,6 +290,12 @@ export const NavigatorProvider = ({ children }) => {
         const detail = await getPathDetail(currentActivePathId);
         setActivePathDetail(detail);
 
+        // Invalidate weekly plan so it recalculates based on new progress
+        if (masteryScore >= 70) {
+          const updatedUi = { ...currentUiState, weeklyPlan: null };
+          scheduleUiSave(updatedUi);
+        }
+
         // Fetch updated XP/Level
         const summaryData = await getDashboardSummary().catch(() => null);
         if (summaryData) {
@@ -411,6 +418,56 @@ export const NavigatorProvider = ({ children }) => {
         break;
       }
       
+      case 'INJECT_ALTERNATIVE_PATH': {
+        if (!currentActivePathId) break;
+        const newNodes = action.payload; // array of {id, label, reason}
+
+        // Fetch latest path detail
+        const currentPathDetail = await getPathDetail(currentActivePathId);
+        
+        if (currentPathDetail && currentPathDetail.nodes) {
+          // Find unverified nodes
+          const unverified = currentPathDetail.nodes.filter(n => 
+             !['completed', 'skipped'].includes(n.status)
+          );
+          
+          let insertSeqIndex = 9000;
+          if (unverified.length > 0) {
+            // Sort to find the true first unverified node
+            unverified.sort((a, b) => a.sequenceOrder - b.sequenceOrder);
+            insertSeqIndex = unverified[0].sequenceOrder;
+            
+            // Shift existing unverified nodes down
+            for (const n of unverified) {
+               await updateNodeMastery(currentActivePathId, n.skillId, { 
+                 sequenceOrder: n.sequenceOrder + newNodes.length 
+               });
+            }
+          }
+
+          // Add new nodes in the gap we just created
+          for (const n of newNodes) {
+            await addPersonalizationNode(currentActivePathId, {
+              skillId: n.id,
+              label: n.label,
+              category: n.category || 'practice',
+              isAiInjected: true,
+              personalizationNote: n.reason || 'Alternative Path Enhancement',
+              sequenceOrder: insertSeqIndex++
+            });
+          }
+        }
+
+        // Invalidate weekly plan
+        const updatedUi = { ...currentUiState, weeklyPlan: null };
+        scheduleUiSave(updatedUi);
+
+        // Reload detail
+        const detail = await getPathDetail(currentActivePathId);
+        setActivePathDetail(detail);
+        break;
+      }
+
       case 'ADD_MILESTONE': {
         if (!currentActivePathId) break;
         await addMilestone(currentActivePathId, action.payload);
@@ -424,6 +481,30 @@ export const NavigatorProvider = ({ children }) => {
         await toggleMilestone(currentActivePathId, action.payload);
         const detail = await getPathDetail(currentActivePathId);
         setActivePathDetail(detail);
+        break;
+      }
+      
+      case 'SET_WEEKLY_PLAN': {
+        const planStr = JSON.stringify(action.payload.plan);
+        const updatedUi = { ...currentUiState, weeklyPlan: action.payload.plan };
+        scheduleUiSave(updatedUi);
+        if (currentActivePathId) {
+           updatePath(currentActivePathId, { weeklyPlan: planStr })
+             .then(detail => setActivePathDetail(detail))
+             .catch(console.error);
+        }
+        break;
+      }
+
+      case 'INCREMENT_PLAN_REGEN': {
+        const now = new Date().getTime();
+        let regenHistory = currentUiState.planRegenHistory || [];
+        // Filter history to last 2 hours
+        regenHistory = regenHistory.filter(t => (now - t) < 2 * 60 * 60 * 1000);
+        regenHistory.push(now);
+        
+        const updatedUi = { ...currentUiState, planRegenHistory: regenHistory };
+        scheduleUiSave(updatedUi);
         break;
       }
       
@@ -504,6 +585,17 @@ export const NavigatorProvider = ({ children }) => {
     canvasEdits: uiState.canvasEdits || [],
     learningDates: uiState.learningDates || [],
     userProgress,
+    weeklyPlan: (() => {
+      try {
+        if (activePathDetail?.weeklyPlan) {
+           return typeof activePathDetail.weeklyPlan === 'string' ? JSON.parse(activePathDetail.weeklyPlan) : activePathDetail.weeklyPlan;
+        }
+        return uiState.weeklyPlan;
+      } catch (e) {
+        return uiState.weeklyPlan;
+      }
+    })(),
+    planRegenHistory: uiState.planRegenHistory || [],
     totalTimeMinutes: activePathDetail?.totalTimeMinutes || 0,
     isSyncing,
     lastSyncedAt,
