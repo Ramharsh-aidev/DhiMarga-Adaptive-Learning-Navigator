@@ -12,16 +12,16 @@ export const routeChatAction = (intent, payload, currentState, dispatch) => {
       break;
     
     case 'ADD_SKILL':
-      dispatch({ type: 'ADD_SKILL_TO_PATH', payload: payload.skillId });
+      dispatch({ type: 'ADD_SKILL_TO_PATH', payload: payload.skillId, meta: { isDraft: true } });
       break;
 
     case 'ADD_SUBTREE':
       // payload: { topic, nodes: [{id, label, category, estimatedHours, prerequisites, unlocks}] }
-      dispatch({ type: 'ADD_SUBTREE_TO_PATH', payload: payload });
+      dispatch({ type: 'ADD_SUBTREE_TO_PATH', payload: payload, meta: { isDraft: true } });
       break;
       
-    case 'REMOVE_SKILL':
-      dispatch({ type: 'REMOVE_SKILL_FROM_PATH', payload: payload.skillId });
+    case 'REMOVE_SKILLS':
+      dispatch({ type: 'REMOVE_SKILLS_FROM_PATH', payload: payload.skillIds, meta: { isDraft: true } });
       break;
 
     case 'CONFIGURE_SKILL':

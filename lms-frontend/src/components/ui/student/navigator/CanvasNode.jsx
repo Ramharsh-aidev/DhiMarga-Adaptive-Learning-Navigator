@@ -11,14 +11,20 @@ const CanvasNode = ({ item, isDraggable = false, isTreeMode = false }) => {
   const ls = state.learnerState[item.skillId];
   const isVerified = ls?.status === 'verified';
   const isGap = ls?.status === 'gap';
+  const isSkipped = ls?.status === 'skipped' || item.status === 'skipped';
   
   // Is this the first unverified item?
-  const currentPathNode = state.currentPath.find(n => !state.learnerState[n.skillId] || state.learnerState[n.skillId].status !== 'verified');
-  const isCurrent = currentPathNode?.skillId === item.skillId;
+  const currentPathNode = state.currentPath.find(n => {
+    const s = state.learnerState[n.skillId]?.status;
+    return !s || (s !== 'verified' && s !== 'skipped');
+  });
+  const isCurrent = currentPathNode?.skillId === item.skillId && !isSkipped && !isVerified;
 
   // Derive display status
   let displayStatus = 'upcoming';
-  if (isVerified) displayStatus = 'completed';
+  if (item.draftStatus) displayStatus = item.draftStatus;
+  else if (isSkipped) displayStatus = 'skipped';
+  else if (isVerified) displayStatus = 'completed';
   else if (isCurrent) displayStatus = 'current';
   else if (isGap) displayStatus = 'blocked';
 
@@ -27,13 +33,16 @@ const CanvasNode = ({ item, isDraggable = false, isTreeMode = false }) => {
     current: { color: 'bg-violet-50 border-violet-300 shadow-md', text: 'text-violet-800', icon: Clock, ring: 'border-violet-500 ring-4 ring-violet-100' },
     upcoming: { color: 'bg-white border-slate-200', text: 'text-slate-600', icon: Clock, ring: 'border-slate-300' },
     blocked: { color: 'bg-rose-50 border-rose-300', text: 'text-rose-800', icon: AlertCircle, ring: 'border-rose-400' },
+    pending_removal: { color: 'bg-slate-100 border-slate-300 opacity-50 saturate-50', text: 'text-slate-400 line-through', icon: X, ring: 'border-slate-300' },
+    skipped: { color: 'bg-slate-100 border-slate-300 opacity-50 saturate-50', text: 'text-slate-400 line-through', icon: X, ring: 'border-slate-300' },
+    pending_addition: { color: 'bg-amber-50 border-amber-300 ring-2 ring-amber-100', text: 'text-amber-800', icon: Clock, ring: 'border-amber-400' },
   };
 
   const config = statusConfig[displayStatus] || statusConfig.upcoming;
   const Icon = config.icon;
 
   const handleRemove = () => {
-    dispatch({ type: 'REMOVE_SKILL_FROM_PATH', payload: item.skillId });
+    dispatch({ type: 'REMOVE_SKILLS_FROM_PATH', payload: [item.skillId], meta: { isDraft: true } });
   };
 
   return (
@@ -55,11 +64,13 @@ const CanvasNode = ({ item, isDraggable = false, isTreeMode = false }) => {
         }`}>
           {/* Top Half */}
           <div className={`px-5 py-6 ${
-            isVerified ? 'bg-linear-to-r from-emerald-400 to-green-500' 
+            item.draftStatus === 'pending_addition' ? 'bg-linear-to-r from-amber-400 to-amber-500'
+            : (item.draftStatus === 'pending_removal' || displayStatus === 'skipped') ? 'bg-slate-200 opacity-50 saturate-50'
+            : isVerified ? 'bg-linear-to-r from-emerald-400 to-green-500' 
             : isCurrent ? 'bg-linear-to-r from-violet-500 to-purple-600' 
             : isGap ? 'bg-linear-to-r from-rose-400 to-red-500'
             : 'bg-slate-300'
-          } text-white`}>
+          } ${(item.draftStatus === 'pending_removal' || displayStatus === 'skipped') ? 'text-slate-400 line-through' : 'text-white'}`}>
             <h4 className="font-bold text-lg leading-tight pr-12 line-clamp-2 shadow-black/10 text-shadow-sm">
               {nodeRef?.label || item.skillId}
             </h4>
@@ -100,6 +111,12 @@ const CanvasNode = ({ item, isDraggable = false, isTreeMode = false }) => {
             {displayStatus === 'upcoming' && (
               <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center shadow-sm cursor-not-allowed">
                 <Lock size={24} />
+              </div>
+            )}
+
+            {(displayStatus === 'skipped' || item.draftStatus === 'pending_removal') && (
+              <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-300 border border-slate-200 flex items-center justify-center shadow-sm cursor-not-allowed">
+                <X size={24} />
               </div>
             )}
 

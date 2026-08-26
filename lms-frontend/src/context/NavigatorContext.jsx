@@ -22,6 +22,7 @@ export const useNavigator = () => useContext(NavigatorContext);
 
 import { useAuth } from '../hooks/useAuth';
 import { getResourcesForSkill } from '../data/resources';
+import { usePathDrafts } from '../hooks/usePathDrafts';
 
 export const NavigatorProvider = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -156,6 +157,26 @@ export const NavigatorProvider = ({ children }) => {
     activePathIdRef.current = activePathId;
   }, [activePathId]);
 
+  const baseCurrentPath = (activePathDetail?.nodes || []).map(n => {
+    let selectedResource = null;
+    if (n.selectedResource) {
+      try {
+        selectedResource = typeof n.selectedResource === 'string' ? JSON.parse(n.selectedResource) : n.selectedResource;
+      } catch (e) {
+        console.warn("Failed to parse selectedResource", e);
+      }
+    }
+    if (!selectedResource) {
+      const resources = getResourcesForSkill(n.skillId, activePathDetail?.contentMode || 'mentor');
+      selectedResource = resources && resources.length > 0 
+        ? (resources.find(r => r.learningStyle === activePathDetail?.learningPreference) || resources[0]) 
+        : null;
+    }
+    return { ...n, selectedResource, nodeRef: { label: n.label, category: 'Skill' } };
+  });
+
+  const { draftEdits, projectedPath, addDraft, clearDrafts, discardDraft } = usePathDrafts(baseCurrentPath, capabilityGraph);
+
   const dispatch = useCallback(async (action) => {
     const currentUiState = uiStateRef.current;
     const currentActivePathId = activePathIdRef.current;
@@ -248,12 +269,18 @@ export const NavigatorProvider = ({ children }) => {
         break;
       }
       
-      case 'REMOVE_SKILL_FROM_PATH': {
-        if (!currentActivePathId) break;
-        const skillId = action.payload;
-        await updateNodeMastery(currentActivePathId, skillId, { status: 'skipped' });
-        const detail = await getPathDetail(currentActivePathId);
-        setActivePathDetail(detail);
+      case 'REMOVE_SKILLS_FROM_PATH': {
+        if (action.meta?.isDraft) {
+          addDraft({ type: 'REMOVE_SKILLS', payload: { skillIds: action.payload } });
+        } else {
+          if (!currentActivePathId) break;
+          const skillIds = action.payload; // array of skillIds
+          for (const skillId of skillIds) {
+            await updateNodeMastery(currentActivePathId, skillId, { status: 'skipped' });
+          }
+          const detail = await getPathDetail(currentActivePathId);
+          setActivePathDetail(detail);
+        }
         break;
       }
 
@@ -267,16 +294,20 @@ export const NavigatorProvider = ({ children }) => {
       }
 
       case 'ADD_SUBTREE_TO_PATH': {
-        // AI personalization injection
         if (!currentActivePathId) break;
         const { nodes } = action.payload;
         if (!nodes || !nodes.length) break;
         
         const detailForSeq = await getPathDetail(currentActivePathId);
-        // Find current unverified node to insert BEFORE it
         const currentUnverified = (detailForSeq.nodes || []).find(n => n.status !== 'completed' && n.status !== 'skipped');
         const insertSeq = currentUnverified ? currentUnverified.sequenceOrder : 99;
-        
+
+        if (action.meta?.isDraft) {
+          addDraft({ type: 'ADD_SUBTREE', payload: { nodes, insertSeq } });
+          break;
+        }
+
+        // Real commit logic
         for (let i = 0; i < nodes.length; i++) {
           const n = nodes[i];
           const resourceObj = (n.resourceTitle && n.resourceUrl) ? {
@@ -298,6 +329,54 @@ export const NavigatorProvider = ({ children }) => {
         }
         const detail = await getPathDetail(currentActivePathId);
         setActivePathDetail(detail);
+        break;
+      }
+
+      case 'ADD_SKILL_TO_PATH': {
+        if (action.meta?.isDraft) {
+          addDraft({ type: 'ADD_SKILL', payload: { skillId: action.payload } });
+        }
+        break;
+      }
+      
+      case 'COMMIT_DRAFTS': {
+        if (!currentActivePathId) break;
+        const drafts = action.payload; // array of drafts to commit
+        for (const draft of drafts) {
+          if (draft.type === 'REMOVE_SKILLS') {
+            for (const skillId of draft.payload.skillIds) {
+              await updateNodeMastery(currentActivePathId, skillId, { status: 'skipped' });
+            }
+          } else if (draft.type === 'ADD_SUBTREE') {
+            const { nodes, insertSeq } = draft.payload;
+            for (let i = 0; i < nodes.length; i++) {
+              const n = nodes[i];
+              const resourceObj = (n.resourceTitle && n.resourceUrl) ? {
+                title: n.resourceTitle,
+                url: n.resourceUrl,
+                type: 'video',
+                learningStyle: 'video'
+              } : null;
+              await addPersonalizationNode(currentActivePathId, {
+                skillId: n.id,
+                label: n.label,
+                category: n.category,
+                isAiInjected: true,
+                personalizationNote: n.reason || 'AI Personalized Node',
+                sequenceOrder: insertSeq,
+                selectedResource: resourceObj ? JSON.stringify(resourceObj) : null
+              });
+            }
+          }
+        }
+        const detail = await getPathDetail(currentActivePathId);
+        setActivePathDetail(detail);
+        clearDrafts();
+        break;
+      }
+      
+      case 'DISCARD_DRAFTS': {
+        clearDrafts();
         break;
       }
       
@@ -371,7 +450,7 @@ export const NavigatorProvider = ({ children }) => {
         console.warn('Unhandled action type in NavigatorContext:', action.type);
         break;
     }
-  }, []);
+  }, [addDraft, clearDrafts]);
 
   // Backward compatibility adapter
   const exposedState = {
@@ -379,32 +458,14 @@ export const NavigatorProvider = ({ children }) => {
     activePathId,
     goal: activePathDetail ? { targetRole: activePathDetail.targetRole, deadlineWeeks: activePathDetail.deadlineWeeks, hoursPerWeek: activePathDetail.hoursPerWeek, contentMode: activePathDetail.contentMode } : null,
     pathStatus: activePathDetail?.status || activePathDetail?.pathStatus || 'planning',
-    currentPath: (activePathDetail?.nodes || []).map(n => {
-      let selectedResource = null;
-      if (n.selectedResource) {
-        try {
-          selectedResource = typeof n.selectedResource === 'string' ? JSON.parse(n.selectedResource) : n.selectedResource;
-        } catch (e) {
-          console.warn("Failed to parse selectedResource", e);
-        }
-      }
-      
-      if (!selectedResource) {
-        const resources = getResourcesForSkill(n.skillId, activePathDetail.contentMode || 'mentor');
-        selectedResource = resources && resources.length > 0 
-          ? (resources.find(r => r.learningStyle === activePathDetail.learningPreference) || resources[0]) 
-          : null;
-      }
-        
-      return {
-        ...n,
-        selectedResource,
-        nodeRef: { label: n.label, category: 'Skill' } // shim for frontend bugs
-      };
-    }),
+    currentPath: projectedPath, // Now uses the drafted projection!
     capabilityGraph: capabilityGraph,
-    learnerState: (activePathDetail?.nodes || []).reduce((acc, n) => {
-      acc[n.skillId] = { status: n.status === 'completed' ? 'verified' : n.status === 'gap' ? 'gap' : 'current', masteryScore: n.masteryScore };
+    learnerState: (projectedPath || []).reduce((acc, n) => {
+      let derivedStatus = 'current';
+      if (n.status === 'completed') derivedStatus = 'verified';
+      else if (n.status === 'gap') derivedStatus = 'gap';
+      else if (n.status === 'skipped') derivedStatus = 'skipped';
+      acc[n.skillId] = { status: derivedStatus, masteryScore: n.masteryScore };
       return acc;
     }, {}),
     milestones: activePathDetail?.milestones || [],
@@ -414,7 +475,8 @@ export const NavigatorProvider = ({ children }) => {
     totalTimeMinutes: activePathDetail?.totalTimeMinutes || 0,
     isSyncing,
     lastSyncedAt,
-    isLoadingPaths
+    isLoadingPaths,
+    draftEdits
   };
 
   return (

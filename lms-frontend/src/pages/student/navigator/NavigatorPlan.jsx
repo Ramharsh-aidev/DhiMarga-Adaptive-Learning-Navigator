@@ -5,6 +5,7 @@ import CanvasPath from '../../../components/ui/student/navigator/CanvasPath';
 import MindMap from '../../../components/ui/student/navigator/MindMap';
 import CanvasTimeBudget from '../../../components/ui/student/navigator/CanvasTimeBudget';
 import ChatPanel from '../../../components/ui/student/navigator/ChatPanel';
+import DraftReviewBar from '../../../components/ui/student/navigator/DraftReviewBar';
 import { MessageSquare, Play, ArrowLeft } from 'lucide-react';
 
 const NavigatorPlan = () => {
@@ -121,6 +122,7 @@ const NavigatorPlan = () => {
 
       {/* Persistent Chat Panel */}
       <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      <DraftReviewBar />
     </div>
   );
 };

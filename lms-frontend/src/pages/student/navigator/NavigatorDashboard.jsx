@@ -11,6 +11,7 @@ import ChatPanel from '../../../components/ui/student/navigator/ChatPanel';
 import { calculateLearningDebt, calculateGoalReadiness, diagnoseRootCause } from '../../../engine/learningDebtCalculator';
 import { MessageSquare, Clock, CheckCircle2, Circle, AlertCircle, TrendingDown } from 'lucide-react';
 import ContentSelectionModal from '../../../components/ui/student/navigator/ContentSelectionModal';
+import DraftReviewBar from '../../../components/ui/student/navigator/DraftReviewBar';
 import Layout from '../../../components/layout/Layout';
 
 const NavigatorDashboard = () => {
@@ -299,6 +300,7 @@ const NavigatorDashboard = () => {
           </div>
         </div>
         <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+        <DraftReviewBar />
       </div>
     </Layout>
   );

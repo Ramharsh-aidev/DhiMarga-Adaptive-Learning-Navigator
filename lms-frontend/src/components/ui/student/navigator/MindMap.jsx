@@ -16,21 +16,27 @@ const MindMapNode = ({ node, isRoot = false }) => {
   const learnerSkill = state.learnerState[node.originalId];
   const isVerified = learnerSkill?.status === 'verified';
   const isBlocked = learnerSkill?.status === 'gap';
-  const masteryScore = learnerSkill?.masteryScore || 0;
-
   // Find if this node is the 'current' one (first unverified in the path)
-  const currentPathNode = state.currentPath?.find(n => n.skillId === node.originalId);
+  const currentPathNodeObj = state.currentPath?.find(n => n.skillId === node.originalId);
+  const isSkipped = learnerSkill?.status === 'skipped' || currentPathNodeObj?.status === 'skipped';
+  const masteryScore = learnerSkill?.masteryScore || 0;
   
   // Determine if it's the actual current learning target
-  const isCurrent = !isRoot && currentPathNode && !isVerified && 
-    state.currentPath.find(n => !state.learnerState[n.skillId] || state.learnerState[n.skillId].status !== 'verified')?.skillId === node.originalId;
+  const isCurrent = !isRoot && currentPathNodeObj && !isVerified && !isSkipped && 
+    state.currentPath.find(n => !state.learnerState[n.skillId] || (state.learnerState[n.skillId].status !== 'verified' && state.learnerState[n.skillId].status !== 'skipped'))?.skillId === node.originalId;
 
   // Styling based on status
   let bgClass = "bg-white border-slate-200 text-slate-600 shadow-sm";
   let iconBg = "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700";
   let ringClass = "";
   
-  if (isRoot) {
+  if (currentPathNodeObj?.draftStatus === 'pending_removal' || isSkipped) {
+    bgClass = "bg-slate-100 border-slate-300 text-slate-400 line-through opacity-50 saturate-50 shadow-none";
+    iconBg = "bg-slate-200 text-slate-400";
+  } else if (currentPathNodeObj?.draftStatus === 'pending_addition') {
+    bgClass = "bg-amber-50 border-amber-400 text-amber-800 shadow-sm font-bold ring-2 ring-amber-200";
+    iconBg = "bg-amber-100 text-amber-700 hover:bg-amber-200";
+  } else if (isRoot) {
     bgClass = "bg-linear-to-r from-violet-600 to-purple-600 border-violet-700 text-white font-extrabold shadow-lg shadow-violet-200/50";
     iconBg = "bg-violet-500 text-white hover:bg-violet-400";
   } else if (node.id === '__user_additions__') {
@@ -59,8 +65,8 @@ const MindMapNode = ({ node, isRoot = false }) => {
     navigate(`/student/navigator/assess/${node.originalId}`);
   };
 
-  const nodeRefData = currentPathNode?.nodeRef || node.nodeRef;
-  const estimatedHours = currentPathNode?.estimatedHours || nodeRefData?.estimatedHours || 3;
+  const nodeRefData = currentPathNodeObj?.nodeRef || node.nodeRef;
+  const estimatedHours = currentPathNodeObj?.estimatedHours || nodeRefData?.estimatedHours || 3;
 
   return (
     <div className="flex items-center relative py-2">
