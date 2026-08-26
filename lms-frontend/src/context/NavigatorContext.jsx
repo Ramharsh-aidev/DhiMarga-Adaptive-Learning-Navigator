@@ -13,7 +13,8 @@ import {
   toggleMilestone,
   getUiState,
   saveUiState,
-  updateContentMode
+  updateContentMode,
+  getDashboardSummary
 } from '../services/navigatorService';
 
 const NavigatorContext = createContext();
@@ -32,8 +33,8 @@ export const NavigatorProvider = ({ children }) => {
   const [activePathDetail, setActivePathDetail] = useState(null);
   const [capabilityGraph, setCapabilityGraph] = useState(null);
   
-  // UI State Blob (chatHistory, canvasEdits, learningDates)
   const [uiState, setUiState] = useState({ chatHistory: [], canvasEdits: [], learningDates: [] });
+  const [userProgress, setUserProgress] = useState({ xp: 0, level: 1 });
   
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
@@ -44,9 +45,10 @@ export const NavigatorProvider = ({ children }) => {
   const loadInitialData = useCallback(async () => {
     setIsLoadingPaths(true);
     try {
-      const [pathsData, uiData] = await Promise.all([
+      const [pathsData, uiData, summaryData] = await Promise.all([
         getUserPaths(),
-        getUiState()
+        getUiState(),
+        getDashboardSummary().catch(() => ({}))
       ]);
       
       setPaths(pathsData || []);
@@ -55,6 +57,10 @@ export const NavigatorProvider = ({ children }) => {
         const parsed = JSON.parse(uiData.stateJson);
         uiStateRef.current = parsed;
         setUiState(parsed);
+      }
+      
+      if (summaryData) {
+        setUserProgress({ xp: summaryData.xp || 0, level: summaryData.level || 1 });
       }
       
       const active = (pathsData || []).find(p => p.status === 'active');
@@ -177,11 +183,27 @@ export const NavigatorProvider = ({ children }) => {
 
   const { draftEdits, projectedPath, addDraft, clearDrafts, discardDraft } = usePathDrafts(baseCurrentPath, capabilityGraph);
 
+  const updateGoal = useCallback(async (updates) => {
+    try {
+      if (!activePathIdRef.current) return;
+      const updatedPath = await updatePath(activePathIdRef.current, { goal: updates });
+      setActivePathDetail(updatedPath);
+    } catch (err) {
+      console.error("Failed to update goal:", err);
+    }
+  }, []);
+
   const dispatch = useCallback(async (action) => {
+    console.log('[NavigatorContext] Action:', action.type, action.payload);
     const currentUiState = uiStateRef.current;
     const currentActivePathId = activePathIdRef.current;
     
     switch (action.type) {
+      case 'UPDATE_GOAL': {
+        await updateGoal(action.payload);
+        break;
+      }
+
       case 'SET_GOAL': {
         const payload = { ...action.payload, graphSlug: action.payload.targetRole };
         const pathData = await createPath(payload);
@@ -255,7 +277,7 @@ export const NavigatorProvider = ({ children }) => {
       }
       
       case 'UPDATE_MASTERY': {
-        if (!currentActivePathId) break;
+        if (!currentActivePathId) return null;
         const { skillId, masteryScore } = action.payload;
         await updateNodeMastery(currentActivePathId, skillId, {
           masteryScore,
@@ -266,7 +288,16 @@ export const NavigatorProvider = ({ children }) => {
         // Refresh details
         const detail = await getPathDetail(currentActivePathId);
         setActivePathDetail(detail);
-        break;
+
+        // Fetch updated XP/Level
+        const summaryData = await getDashboardSummary().catch(() => null);
+        if (summaryData) {
+          setUserProgress(prev => {
+             // Return the updated summary so the caller can check for XP increases
+             return { xp: summaryData.xp || 0, level: summaryData.level || 1 };
+          });
+        }
+        return summaryData;
       }
       
       case 'REMOVE_SKILLS_FROM_PATH': {
@@ -472,6 +503,7 @@ export const NavigatorProvider = ({ children }) => {
     chatHistory: uiState.chatHistory || [],
     canvasEdits: uiState.canvasEdits || [],
     learningDates: uiState.learningDates || [],
+    userProgress,
     totalTimeMinutes: activePathDetail?.totalTimeMinutes || 0,
     isSyncing,
     lastSyncedAt,

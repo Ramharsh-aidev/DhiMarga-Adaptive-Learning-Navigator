@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Play, FastForward, Video, FileText, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const NextActionCard = ({ currentNode, onStart, onSkip }) => {
+const NextActionCard = ({ currentNode, isGap, onStart, onSkip }) => {
   if (!currentNode) return null;
 
   return (
@@ -23,8 +23,10 @@ const NextActionCard = ({ currentNode, onStart, onSkip }) => {
           
           <div className="flex-1 max-w-2xl">
             <div className="flex items-center gap-2 mb-3">
-              <span className="bg-white text-violet-600 text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-sm border border-violet-100">
-                Up Next
+              <span className={`text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-sm border ${
+                isGap ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-white text-violet-600 border-violet-100'
+              }`}>
+                {isGap ? 'Recovery Mission' : 'Mastery Mission'}
               </span>
               <span className="text-slate-500 text-sm font-medium flex items-center gap-1">
                 <ClockIcon /> ~{Math.round(currentNode.estimatedHours || 3)}h Focus

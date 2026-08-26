@@ -5,7 +5,8 @@ import { getQuestionsForSkill } from '../../../data/assessmentQuestions';
 import QuizQuestion from '../../../components/ui/student/navigator/QuizQuestion';
 import Layout from '../../../components/layout/Layout';
 import { aiService } from '../../../services/aiService';
-import { Loader2, ArrowLeft, RotateCcw } from 'lucide-react';
+import { Loader2, ArrowLeft, RotateCcw, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const NavigatorAssessment = () => {
   const { skillId } = useParams();
@@ -20,6 +21,7 @@ const NavigatorAssessment = () => {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState(null);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  const [xpEarned, setXpEarned] = useState(0);
 
   // Get current path details for breadcrumb
   const currentPathNode = state.currentPath?.find(n => n.skillId === skillId);
@@ -72,10 +74,16 @@ const NavigatorAssessment = () => {
       
       const finalScorePercentage = Math.round(((score + (isCorrect ? 1 : 0)) / questions.length) * 100);
       
-      await dispatch({
+      const prevXp = state.userProgress?.xp || 0;
+
+      const newSummary = await dispatch({
         type: 'UPDATE_MASTERY',
         payload: { skillId, masteryScore: finalScorePercentage }
       });
+      
+      if (newSummary && newSummary.xp > prevXp) {
+        setXpEarned(newSummary.xp - prevXp);
+      }
       
       // Call AI to evaluate and potentially modify the path
       const result = await aiService.evaluateAssessment(skillId, newAnswers, state, dispatch);
@@ -119,11 +127,24 @@ const NavigatorAssessment = () => {
       const finalScore = Math.round((score / questions.length) * 100);
       return (
         <div className="max-w-2xl mx-auto py-8">
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 relative">
             <h2 className="text-3xl font-extrabold mb-4 text-slate-900 tracking-tight">Assessment Complete</h2>
             <div className={`text-5xl font-extrabold mb-6 ${finalScore >= 60 ? 'text-green-600' : 'text-rose-500'}`}>
               {finalScore}%
             </div>
+            
+            <AnimatePresence>
+              {xpEarned > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="absolute -right-8 top-12 bg-linear-to-r from-amber-400 to-orange-500 text-white px-4 py-2 rounded-2xl shadow-xl shadow-orange-500/30 flex items-center gap-2 transform rotate-12"
+                >
+                  <Zap size={20} className="fill-white" />
+                  <span className="font-extrabold text-xl">+{xpEarned} XP</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {isEvaluating ? (

@@ -264,38 +264,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         })}
       </nav>
 
-      {/* Study Stats Card (Hidden on mobile if space is tight, or just let it scroll) */}
-      <div className="px-4 mt-2 shrink-0">
-        <div className="bg-linear-to-br from-violet-50 via-purple-50 to-pink-50 rounded-2xl p-4 border border-violet-100/50 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/40 blur-2xl rounded-full -mr-8 -mt-8 pointer-events-none" />
-          
-          <div className="flex items-start gap-3 mb-2 relative z-10">
-            <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-sm border border-violet-100 shrink-0">
-              <Clock size={16} className="text-violet-600" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900">Study Streak</h4>
-              <p className="text-[10px] text-slate-500 font-medium">Keep it going!</p>
-            </div>
-          </div>
-
-          <div className="flex items-baseline gap-2 mb-2 relative z-10">
-            <span className="text-2xl font-extrabold bg-linear-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent tracking-tight">
-              7
-            </span>
-            <span className="text-xs font-medium text-slate-600">days</span>
-          </div>
-
-          <div className="relative h-2 bg-white/60 rounded-full overflow-hidden border border-violet-100/30">
-            <motion.div
-              className="absolute inset-y-0 left-0 bg-linear-to-r from-violet-500 to-purple-500 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: '70%' }}
-              transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Study Stats Card Removed */}
 
       {/* User Profile & Logout (Bottom of Sidebar) */}
       <div className="p-4 mt-4 border-t border-slate-100 shrink-0">

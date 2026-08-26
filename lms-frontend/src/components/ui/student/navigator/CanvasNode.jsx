@@ -13,12 +13,18 @@ const CanvasNode = ({ item, isDraggable = false, isTreeMode = false }) => {
   const isGap = ls?.status === 'gap';
   const isSkipped = ls?.status === 'skipped' || item.status === 'skipped';
   
-  // Is this the first unverified item?
-  const currentPathNode = state.currentPath.find(n => {
-    const s = state.learnerState[n.skillId]?.status;
-    return !s || (s !== 'verified' && s !== 'skipped');
-  });
-  const isCurrent = currentPathNode?.skillId === item.skillId && !isSkipped && !isVerified;
+  // Evaluate graph-based prerequisites to determine if skill is unlocked
+  let arePrereqsMet = true;
+  if (state.capabilityGraph && state.capabilityGraph.nodes[item.skillId]) {
+    const prereqs = state.capabilityGraph.nodes[item.skillId].prerequisites || [];
+    arePrereqsMet = prereqs.every(reqId => {
+      const s = state.learnerState[reqId]?.status;
+      return s === 'verified' || s === 'skipped';
+    });
+  }
+
+  // A skill is 'current' (unlocked) if it's not verified/skipped itself, AND its prerequisites are met.
+  const isCurrent = !isSkipped && !isVerified && !isGap && arePrereqsMet;
 
   // Derive display status
   let displayStatus = 'upcoming';

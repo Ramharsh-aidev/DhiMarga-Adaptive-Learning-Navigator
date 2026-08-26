@@ -6,10 +6,12 @@ import ReadinessGauge from '../../../components/ui/student/navigator/ReadinessGa
 import LearningDebtCard from '../../../components/ui/student/navigator/LearningDebtCard';
 import LearnerStatePanel from '../../../components/ui/student/navigator/LearnerStatePanel';
 import NextActionCard from '../../../components/ui/student/navigator/NextActionCard';
+import MissionsWidget from '../../../components/ui/student/navigator/MissionsWidget';
 import CanvasPath from '../../../components/ui/student/navigator/CanvasPath';
 import ChatPanel from '../../../components/ui/student/navigator/ChatPanel';
+import WeeklyPlanModal from '../../../components/ui/student/navigator/WeeklyPlanModal';
 import { calculateLearningDebt, calculateGoalReadiness, diagnoseRootCause } from '../../../engine/learningDebtCalculator';
-import { MessageSquare, Clock, CheckCircle2, Circle, AlertCircle, TrendingDown } from 'lucide-react';
+import { MessageSquare, Clock, CheckCircle2, Circle, AlertCircle, TrendingDown, Calendar } from 'lucide-react';
 import ContentSelectionModal from '../../../components/ui/student/navigator/ContentSelectionModal';
 import DraftReviewBar from '../../../components/ui/student/navigator/DraftReviewBar';
 import Layout from '../../../components/layout/Layout';
@@ -18,6 +20,7 @@ const NavigatorDashboard = () => {
   const { state, dispatch } = useNavigator();
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
 
   useEffect(() => {
     if (state.pathStatus === 'blocked') {
@@ -52,6 +55,37 @@ const NavigatorDashboard = () => {
     return { verified, gap, upcoming, totalHours, total: state.currentPath.length };
   }, [state.currentPath, state.learnerState, state.goal, state.pathStatus]);
 
+  // Determine current node (Missions Logic)
+  // Priority 1: Gaps (Learning Debt)
+  const currentNode = useMemo(() => {
+    if (!state.currentPath) return null;
+    let node = state.currentPath.find(n => state.learnerState[n.skillId]?.status === 'gap');
+    
+    // Priority 2: Unlocked skills (prerequisites met)
+    if (!node) {
+      node = state.currentPath.find(n => {
+        const ls = state.learnerState[n.skillId];
+        if (ls?.status === 'verified' || ls?.status === 'skipped') return false;
+        
+        // Check if prereqs are met
+        if (state.capabilityGraph && state.capabilityGraph.nodes[n.skillId]) {
+          const prereqs = state.capabilityGraph.nodes[n.skillId].prerequisites || [];
+          return prereqs.every(reqId => {
+            const s = state.learnerState[reqId]?.status;
+            return s === 'verified' || s === 'skipped';
+          });
+        }
+        return false; // Safely default to false if graph is missing
+      });
+    }
+    return node;
+  }, [state.currentPath, state.learnerState, state.capabilityGraph]);
+
+  const rootCauses = useMemo(() => {
+    if (!currentNode) return [];
+    return diagnoseRootCause(currentNode.skillId, state.learnerState, state.capabilityGraph);
+  }, [currentNode, state.learnerState, state.capabilityGraph]);
+
   if (state.isLoadingPaths) {
     return (
       <div className="flex items-center justify-center h-full bg-gray-50">
@@ -81,17 +115,6 @@ const NavigatorDashboard = () => {
       </div>
     </div>
   );
-
-  // Determine current node (first unverified node in path order)
-  const currentNode = state.currentPath.find(n => {
-    const ls = state.learnerState[n.skillId];
-    return !ls || ls.status !== 'verified';
-  });
-
-  const rootCauses = useMemo(() => {
-    if (!currentNode) return [];
-    return diagnoseRootCause(currentNode.skillId, state.learnerState, state.capabilityGraph);
-  }, [currentNode, state.learnerState, state.capabilityGraph]);
 
   const handleStartNextAction = () => {
     if (currentNode) {
@@ -147,23 +170,51 @@ const NavigatorDashboard = () => {
               </span>
             </div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 p-5 mb-8"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Path Progress</span>
-                <span className="text-sm font-bold text-violet-600 bg-violet-50 px-3 py-1 rounded-full">{stats.verified} of {stats.total} skills verified</span>
-              </div>
-              <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-linear-to-r from-violet-600 via-purple-500 to-pink-500 transition-all duration-1000 ease-out"
-                  style={{ width: `${stats.total > 0 ? (stats.verified / stats.total) * 100 : 0}%` }}
-                />
-              </div>
-            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 p-5"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Path Progress</span>
+                  <span className="text-sm font-bold text-violet-600 bg-violet-50 px-3 py-1 rounded-full">{stats.verified} of {stats.total} skills verified</span>
+                </div>
+                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-linear-to-r from-violet-600 via-purple-500 to-pink-500 transition-all duration-1000 ease-out"
+                    style={{ width: `${stats.total > 0 ? (stats.verified / stats.total) * 100 : 0}%` }}
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-amber-200 p-5 flex items-center justify-between"
+              >
+                <div>
+                  <span className="text-sm font-semibold text-amber-700 uppercase tracking-wider block mb-1">Learner Level</span>
+                  <div className="text-3xl font-extrabold text-amber-600">
+                    Lv. {state.userProgress?.level || 1}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-100 inline-block mb-2">
+                    {state.userProgress?.xp || 0} XP
+                  </span>
+                  <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-linear-to-r from-amber-400 to-orange-500 transition-all duration-1000 ease-out"
+                      style={{ width: `${(state.userProgress?.xp || 0) % 100}%` }}
+                    />
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1 font-medium">{100 - ((state.userProgress?.xp || 0) % 100)} XP to next</div>
+                </div>
+              </motion.div>
+            </div>
 
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
@@ -205,12 +256,20 @@ const NavigatorDashboard = () => {
                 </div>
               </div>
 
-              <button 
-                onClick={() => setChatOpen(!chatOpen)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-violet-50 hover:border-violet-200 shadow-sm transition-all hover:text-violet-600"
-              >
-                <MessageSquare size={18} className="text-violet-500" /> Ask AI Assistant
-              </button>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setPlanOpen(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-violet-50 hover:border-violet-200 shadow-sm transition-all hover:text-violet-600"
+                >
+                  <Calendar size={18} className="text-violet-500" /> Weekly Plan
+                </button>
+                <button 
+                  onClick={() => setChatOpen(!chatOpen)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-violet-50 hover:border-violet-200 shadow-sm transition-all hover:text-violet-600"
+                >
+                  <MessageSquare size={18} className="text-violet-500" /> Ask AI
+                </button>
+              </div>
             </motion.div>
             
             {/* Status Pills */}
@@ -247,35 +306,7 @@ const NavigatorDashboard = () => {
               className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8"
             >
               <div className="lg:col-span-2 space-y-6">
-                {rootCauses.length > 0 && (
-                  <div className="bg-rose-50 border border-rose-200 p-5 rounded-2xl shadow-sm flex items-start gap-4">
-                    <TrendingDown className="text-rose-500 shrink-0 mt-1" size={24} />
-                    <div>
-                      <h3 className="text-lg font-bold text-rose-900 mb-1">Root Cause Identified</h3>
-                      <p className="text-rose-700 mb-3 text-sm">
-                        You are struggling with <strong>{currentNode.nodeRef?.label || currentNode.skillId}</strong> because you have foundational gaps in its prerequisites. We recommend addressing these root causes first.
-                      </p>
-                      <ul className="space-y-2">
-                        {rootCauses.map(rc => (
-                          <li key={rc.skillId} className="flex items-center gap-2 text-sm font-medium text-rose-800 bg-white/50 px-3 py-2 rounded-lg">
-                            <AlertCircle size={16} /> {rc.skillName} (Gap: {rc.gap}%)
-                          </li>
-                        ))}
-                      </ul>
-                      <button 
-                        onClick={() => dispatch({ type: 'TRIGGER_RECOVERY', payload: currentNode.skillId })}
-                        className="mt-4 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm"
-                      >
-                        Start Remediation Path
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <NextActionCard 
-                  currentNode={currentNode} 
-                  onStart={handleStartNextAction} 
-                  onSkip={handleSkip} 
-                />
+                <MissionsWidget state={state} dispatch={dispatch} currentNode={currentNode} />
               </div>
               <div>
                 <ReadinessGauge readiness={readiness} />
@@ -300,6 +331,7 @@ const NavigatorDashboard = () => {
           </div>
         </div>
         <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+        <WeeklyPlanModal isOpen={planOpen} onClose={() => setPlanOpen(false)} />
         <DraftReviewBar />
       </div>
     </Layout>
