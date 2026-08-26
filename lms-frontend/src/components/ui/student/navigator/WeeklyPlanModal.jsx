@@ -1,27 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Loader2, BookOpen, PenTool, RefreshCw } from 'lucide-react';
 import { useNavigator } from '../../../../context/NavigatorContext';
 import { aiService } from '../../../../services/aiService';
 
 const WeeklyPlanModal = ({ isOpen, onClose }) => {
-  const { state } = useNavigator();
+  const { state, dispatch } = useNavigator();
   const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState(null);
+  const [plan, setPlan] = useState(state.weeklyPlan || null);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [savedStatus, setSavedStatus] = useState(false);
+  const saveTimeoutRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen && !plan && !loading) {
+    if (!isOpen) return;
+
+    if (state.weeklyPlan) {
+      const isExpired = state.weeklyPlan.generatedAt 
+        && (new Date().getTime() - state.weeklyPlan.generatedAt > 7 * 24 * 60 * 60 * 1000);
+        
+      if (isExpired && !loading) {
+        generatePlan();
+      } else if (!plan) {
+        setPlan(state.weeklyPlan);
+      }
+    } else if (!plan && !loading) {
       generatePlan();
     }
+    
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
   }, [isOpen]);
 
+  const handleManualSave = () => {
+    if (!plan) return;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    
+    dispatch({ type: 'SET_WEEKLY_PLAN', payload: { plan } });
+    
+    setSavedStatus(true);
+    setTimeout(() => setSavedStatus(false), 2000);
+  };
+
   const generatePlan = async () => {
+    const now = new Date().getTime();
+    const history = state.planRegenHistory || [];
+    const recentGens = history.filter(t => (now - t) < 2 * 60 * 60 * 1000);
+    
+    if (recentGens.length >= 4) {
+      setErrorMsg("Rate limit reached: You can only regenerate the plan 4 times every 2 hours. Please try again later.");
+      return;
+    }
+    
+    setErrorMsg('');
     setLoading(true);
+    setSavedStatus(false);
+    dispatch({ type: 'INCREMENT_PLAN_REGEN' });
+    
     try {
       const generated = await aiService.generateWeeklyPlan(state);
       setPlan(generated);
+      
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        dispatch({ type: 'SET_WEEKLY_PLAN', payload: { plan: generated } });
+      }, 40000);
+      
     } catch (err) {
       console.error(err);
+      setErrorMsg("Failed to generate plan. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -54,6 +102,14 @@ const WeeklyPlanModal = ({ isOpen, onClose }) => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {plan && !loading && (
+                  <button 
+                    onClick={handleManualSave}
+                    className="px-4 py-2 bg-violet-600 border border-violet-700 rounded-xl text-sm font-bold text-white hover:bg-violet-700 shadow-sm transition-colors flex items-center gap-2"
+                  >
+                    {savedStatus ? "Saved!" : "Save Plan"}
+                  </button>
+                )}
                 <button 
                   onClick={generatePlan}
                   disabled={loading}
@@ -69,6 +125,11 @@ const WeeklyPlanModal = ({ isOpen, onClose }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+              {errorMsg && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl mb-4 font-medium text-sm">
+                  {errorMsg}
+                </div>
+              )}
               {loading ? (
                 <div className="flex flex-col items-center justify-center h-64 gap-4">
                   <div className="relative">

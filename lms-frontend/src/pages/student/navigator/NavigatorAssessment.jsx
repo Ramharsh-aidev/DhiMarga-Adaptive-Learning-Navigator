@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useNavigator } from '../../../context/NavigatorContext';
 import { getQuestionsForSkill } from '../../../data/assessmentQuestions';
 import QuizQuestion from '../../../components/ui/student/navigator/QuizQuestion';
+import SocraticTutor from '../../../components/ui/student/navigator/SocraticTutor';
 import Layout from '../../../components/layout/Layout';
 import { aiService } from '../../../services/aiService';
 import { Loader2, ArrowLeft, RotateCcw, Zap } from 'lucide-react';
@@ -22,6 +23,11 @@ const NavigatorAssessment = () => {
   const [evaluationResult, setEvaluationResult] = useState(null);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [xpEarned, setXpEarned] = useState(0);
+
+  // If this skill is currently a 'gap', default to Socratic Tutor mode
+  const [useSocraticTutor, setUseSocraticTutor] = useState(
+    state.learnerState[skillId]?.status === 'gap'
+  );
 
   // Get current path details for breadcrumb
   const currentPathNode = state.currentPath?.find(n => n.skillId === skillId);
@@ -65,6 +71,25 @@ const NavigatorAssessment = () => {
       isCorrect
     }];
     setAnswers(newAnswers);
+
+    // Adaptive Assessment logic: Check for 2 consecutive wrong answers early on
+    const consecutiveWrong = newAnswers.slice(-2).filter(a => !a.isCorrect).length === 2;
+    
+    if (consecutiveWrong && questions.length <= 5 && !questions[currentIdx].isAdaptive) {
+      setIsLoadingQuestions(true);
+      try {
+        const adaptiveQuestions = await aiService.generateAdaptiveQuestions(skillId, newAnswers.slice(-2));
+        const newQuestions = [
+          ...questions.slice(0, currentIdx + 1),
+          ...adaptiveQuestions.map(q => ({ ...q, isAdaptive: true }))
+        ];
+        setQuestions(newQuestions);
+      } catch (err) {
+        console.error("Adaptive fallback failed", err);
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    }
     
     if (currentIdx + 1 < questions.length) {
       setCurrentIdx(currentIdx + 1);
@@ -98,7 +123,50 @@ const NavigatorAssessment = () => {
     }
   };
 
+  const handleSocraticComplete = async () => {
+    setCompleted(true);
+    setIsEvaluating(true);
+    const prevXp = state.userProgress?.xp || 0;
+    
+    // Give them full marks for recovering a gap via tutoring
+    const newSummary = await dispatch({
+      type: 'UPDATE_MASTERY',
+      payload: { skillId, masteryScore: 100 }
+    });
+    
+    if (newSummary && newSummary.xp > prevXp) {
+      setXpEarned(newSummary.xp - prevXp);
+    }
+    
+    setScore(questions.length || 5); // visually show 100%
+    setEvaluationResult({
+      summary: "You successfully demonstrated mastery through the Socratic Tutor!",
+      strongTopics: [skillLabel],
+      weakTopics: []
+    });
+    
+    await dispatch({ type: 'REPLAN_PATH' });
+    setIsEvaluating(false);
+  };
+
   const renderContent = () => {
+    if (useSocraticTutor) {
+      return (
+        <div className="max-w-4xl mx-auto py-4">
+          <div className="mb-4 flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+            <h2 className="text-xl font-bold text-slate-900">Recovery Mission: {skillLabel}</h2>
+            <button 
+              onClick={() => setUseSocraticTutor(false)}
+              className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              Switch to Standard Quiz
+            </button>
+          </div>
+          <SocraticTutor skillId={skillLabel} onComplete={handleSocraticComplete} />
+        </div>
+      );
+    }
+
     if (isLoadingQuestions) {
       return (
         <div className="flex flex-col items-center justify-center py-32 text-violet-600">
@@ -201,9 +269,17 @@ const NavigatorAssessment = () => {
         <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-slate-900">Knowledge Check: {skillLabel}</h2>
-            <span className="px-3 py-1 bg-violet-50 text-violet-700 rounded-full text-sm font-bold border border-violet-100">
-              Question {currentIdx + 1} of {questions.length}
-            </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setUseSocraticTutor(true)}
+                className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-sm font-bold border border-blue-100 hover:bg-blue-100 transition-colors"
+              >
+                Use Tutor Mode
+              </button>
+              <span className="px-3 py-1 bg-violet-50 text-violet-700 rounded-full text-sm font-bold border border-violet-100">
+                Question {currentIdx + 1} of {questions.length}
+              </span>
+            </div>
           </div>
           <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
             <div 

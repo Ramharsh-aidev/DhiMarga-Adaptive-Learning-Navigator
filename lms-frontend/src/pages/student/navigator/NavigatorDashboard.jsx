@@ -10,8 +10,9 @@ import MissionsWidget from '../../../components/ui/student/navigator/MissionsWid
 import CanvasPath from '../../../components/ui/student/navigator/CanvasPath';
 import ChatPanel from '../../../components/ui/student/navigator/ChatPanel';
 import WeeklyPlanModal from '../../../components/ui/student/navigator/WeeklyPlanModal';
+import PathCritiqueModal from '../../../components/ui/student/navigator/PathCritiqueModal';
 import { calculateLearningDebt, calculateGoalReadiness, diagnoseRootCause } from '../../../engine/learningDebtCalculator';
-import { MessageSquare, Clock, CheckCircle2, Circle, AlertCircle, TrendingDown, Calendar } from 'lucide-react';
+import { MessageSquare, Clock, CheckCircle2, Circle, AlertCircle, TrendingDown, Calendar, Target } from 'lucide-react';
 import ContentSelectionModal from '../../../components/ui/student/navigator/ContentSelectionModal';
 import DraftReviewBar from '../../../components/ui/student/navigator/DraftReviewBar';
 import Layout from '../../../components/layout/Layout';
@@ -21,6 +22,7 @@ const NavigatorDashboard = () => {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
+  const [critiqueOpen, setCritiqueOpen] = useState(false);
 
   useEffect(() => {
     if (state.pathStatus === 'blocked') {
@@ -258,6 +260,12 @@ const NavigatorDashboard = () => {
 
               <div className="flex items-center gap-3">
                 <button 
+                  onClick={() => setCritiqueOpen(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-amber-50 hover:border-amber-200 shadow-sm transition-all hover:text-amber-600"
+                >
+                  <Target size={18} className="text-amber-500" /> Challenge Path
+                </button>
+                <button 
                   onClick={() => setPlanOpen(true)}
                   className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-violet-50 hover:border-violet-200 shadow-sm transition-all hover:text-violet-600"
                 >
@@ -332,6 +340,7 @@ const NavigatorDashboard = () => {
         </div>
         <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
         <WeeklyPlanModal isOpen={planOpen} onClose={() => setPlanOpen(false)} />
+        <PathCritiqueModal isOpen={critiqueOpen} onClose={() => setCritiqueOpen(false)} />
         <DraftReviewBar />
       </div>
     </Layout>
