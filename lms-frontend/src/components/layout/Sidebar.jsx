@@ -73,8 +73,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       },
       {
         icon: Award,
-        label: 'Certificates',
-        path: '/student/certificates',
+        label: 'Credentials',
+        path: '/student/credentials',
         description: 'Achievements'
       },
       {
@@ -188,8 +188,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Sidebar Header: DhiMārga Logo replacing the old Portal header */}
       <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-linear-to-br from-violet-600 to-purple-600 rounded-xl flex items-center justify-center shadow-[0_4px_16px_rgba(124,58,237,0.4)]">
-            <BookOpen size={22} className="text-white group-hover:scale-110 transition-transform" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-[0_4px_16px_rgba(124,58,237,0.4)] overflow-hidden bg-white">
+            <img src="/logo.jpg" alt="DhiMarga Logo" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
           </div>
           <div>
             <h1 className="text-xl font-extrabold bg-linear-to-r from-violet-600 via-purple-500 to-pink-500 bg-clip-text text-transparent tracking-tight">

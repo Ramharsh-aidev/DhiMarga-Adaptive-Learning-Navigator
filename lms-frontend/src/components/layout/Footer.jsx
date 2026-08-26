@@ -143,8 +143,8 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center space-x-3 group">
-            <div className="w-8 h-8 bg-linear-to-br from-violet-600 to-pink-600 rounded-lg flex items-center justify-center shadow-md">
-              <BookOpen className="w-4 h-4 text-white" strokeWidth={2.5} />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md overflow-hidden bg-white">
+              <img src="/logo.jpg" alt="DhiMarga Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-extrabold text-white tracking-tight">DhiMārga</span>
           </div>

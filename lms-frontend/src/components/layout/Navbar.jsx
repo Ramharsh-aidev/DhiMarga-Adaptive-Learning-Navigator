@@ -110,7 +110,7 @@ const Navbar = ({ onMenuClick }) => {
         return [
           { icon: LayoutDashboard, label: 'Dashboard', path: '/student/dashboard' },
           { icon: BookOpen, label: 'My Courses', path: '/student/courses' },
-          { icon: Award, label: 'Certificates', path: '/student/certificates' },
+          { icon: Award, label: 'Credentials', path: '/student/credentials' },
         ];
       default:
         return [];
@@ -137,10 +137,10 @@ const Navbar = ({ onMenuClick }) => {
               className="flex items-center gap-3 group"
             >
               <motion.div
-                className="w-10 h-10 bg-linear-to-br from-violet-600 to-purple-600 rounded-xl flex items-center justify-center shadow-[0_4px_16px_rgba(124,58,237,0.4)] hidden sm:flex"
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-[0_4px_16px_rgba(124,58,237,0.4)] hidden sm:flex overflow-hidden bg-white"
                 whileHover={{ scale: 1.05, rotate: 5 }}
               >
-                <BookOpen size={24} className="text-white" />
+                <img src="/logo.jpg" alt="DhiMarga Logo" className="w-full h-full object-cover" />
               </motion.div>
               <div>
                 <h1 className="text-xl font-extrabold bg-linear-to-r from-violet-600 via-purple-500 to-pink-500 bg-clip-text text-transparent tracking-tight">

@@ -19,7 +19,7 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import StudentCourses from './pages/student/MyCourses';
 import CourseView from './pages/student/CourseView';
 import ChapterView from './pages/student/ChapterView';
-import Certificates from './pages/student/Certificates';
+import Credentials from './pages/student/Credentials';
 import StudentProfile from './pages/student/Profile';
 import Progress from './pages/student/Progress';
 import StudentSettings from './pages/student/Settings';
@@ -105,10 +105,10 @@ function App() {
             }
           />
           <Route
-            path="/student/certificates"
+            path="/student/credentials"
             element={
               <PrivateRoute allowedRoles={[USER_ROLES.STUDENT]}>
-                <Certificates />
+                <Credentials />
               </PrivateRoute>
             }
           />

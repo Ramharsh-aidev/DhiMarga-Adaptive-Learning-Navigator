@@ -26,9 +26,9 @@ const Header = () => {
           <Link to="/" className="flex items-center space-x-3 group">
             <motion.div
               whileHover={{ rotate: 10, scale: 1.05 }}
-              className="w-10 h-10 bg-linear-to-br from-violet-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-violet-500/20"
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md shadow-violet-500/20 overflow-hidden bg-white"
             >
-              <BookOpen className="w-5 h-5 text-white" strokeWidth={2.5} />
+              <img src="/logo.jpg" alt="DhiMarga Logo" className="w-full h-full object-cover" />
             </motion.div>
             <div className="flex flex-col">
               <span className="text-xl lg:text-2xl font-extrabold bg-linear-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent tracking-tight">
