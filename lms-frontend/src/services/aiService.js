@@ -258,8 +258,8 @@ AVAILABLE ACTIONS — pick the most appropriate one:
    ]}}
    IMPORTANT: For ADD_SUBTREE, include ALL prerequisite and unlock relationships between the new nodes. Always start from foundational nodes (prerequisites: []) and build up. Make sure to provide a valid, highly-relevant real-world URL for resourceUrl (like YouTube, official docs, or reputable tutorials) so the user actually has content to learn from.
 
-3. Remove a skill from the path:
-   {"type": "REMOVE_SKILL", "payload": {"skillId": "<skill_id>"}}
+3. Remove one or more skills from the path (e.g. if user already knows them):
+   {"type": "REMOVE_SKILLS", "payload": {"skillIds": ["<skill_id_1>", "<skill_id_2>"]}}
 
 4. Update estimated hours for a skill:
    {"type": "CONFIGURE_SKILL", "payload": {"skillId": "<skill_id>", "estimatedHours": <number>}}
@@ -273,7 +273,8 @@ AVAILABLE ACTIONS — pick the most appropriate one:
 RULES:
 - Use ADD_SUBTREE when user mentions a broad topic like "reinforcement learning", "computer vision", "NLP", "system design", etc.
 - Use ADD_SKILL only for simple, specific additions of already-known skills.
-- For REMOVE_SKILL, match the skillId from the current path.
+- Use REMOVE_SKILLS to remove skills. Match the exact skillIds from the current path.
+- NEVER use REPLAN just to remove skills or add skills. Only use REPLAN if the user wants to start over.
 - Always return exactly one action or null.
 
 Recent Chat History:
@@ -283,6 +284,7 @@ User message: ${message}`;
 
   const text = await callGemini({
     contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: "application/json" },
     tools: [{ googleSearch: {} }]
   });
 
