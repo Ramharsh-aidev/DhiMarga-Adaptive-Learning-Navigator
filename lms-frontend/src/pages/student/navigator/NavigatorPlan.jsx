@@ -16,6 +16,43 @@ const NavigatorPlan = () => {
   const [viewMode, setViewMode] = useState('mindmap');
 
   const isNewPath = location.state?.newPath;
+  const customTopics = location.state?.customTopics;
+  const [hasTriggeredCustom, setHasTriggeredCustom] = useState(false);
+
+  React.useEffect(() => {
+    if (state.capabilityGraph && customTopics?.length > 0 && !hasTriggeredCustom) {
+      setHasTriggeredCustom(true);
+      
+      const welcomeMsg = state.chatHistory[0]?.content || 'Generating...';
+      const backgroundContext = {
+        goal: state.goal,
+        pathStatus: 'planning',
+        currentPath: state.currentPath || [],
+        capabilityGraph: state.capabilityGraph,
+        chatHistory: [{ role: 'assistant', content: welcomeMsg }]
+      };
+      
+      const backgroundMessage = `Please inject custom nodes for the following topics I specifically requested: ${customTopics.join(', ')}. Use the ADD_SUBTREE action to build them out completely with prerequisites and unlocks. Make sure they are relevant to my goal.`;
+      
+      import('../../../services/aiService').then(async ({ aiService }) => {
+        try {
+          const aiResponse = await aiService.processChat(backgroundMessage, backgroundContext, dispatch);
+          if (aiResponse) {
+            dispatch({
+              type: 'ADD_CHAT_MESSAGE',
+              payload: {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: aiResponse
+              }
+            });
+          }
+        } catch (err) {
+          console.error("Failed to generate custom topics", err);
+        }
+      });
+    }
+  }, [state.capabilityGraph, customTopics, hasTriggeredCustom, dispatch, state.goal, state.currentPath, state.chatHistory]);
 
   if (!state.goal) {
     if (isNewPath) {

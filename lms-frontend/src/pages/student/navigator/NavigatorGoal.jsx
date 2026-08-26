@@ -5,40 +5,16 @@ import { Bot, Send, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useNavigator } from '../../../context/NavigatorContext';
 import { aiService } from '../../../services/aiService';
 
+import { usePathOnboarding } from '../../../hooks/usePathOnboarding';
+
 const NavigatorGoal = () => {
-  const { dispatch } = useNavigator();
   const navigate = useNavigate();
   const [input, setInput] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { startOnboarding, isProcessing } = usePathOnboarding();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isProcessing) return;
-
-    setIsProcessing(true);
-    try {
-      // 1. Parse goal
-      const goal = await aiService.parseGoal(input);
-      
-      // 2. Dispatch to context
-      await dispatch({ type: 'SET_GOAL', payload: { ...goal, forceNew: true } });
-      
-      // 3. Add initial chat message
-      await dispatch({
-        type: 'ADD_CHAT_MESSAGE',
-        payload: {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: `Great! I've built a capability graph for a ${goal.targetRole.replace('_', ' ')}. Let's review your personalized learning path.`
-        }
-      });
-      
-      // 4. Navigate to canvas plan
-      navigate('/student/navigator/plan', { state: { newPath: true } });
-    } catch (error) {
-      console.error(error);
-      setIsProcessing(false);
-    }
+    await startOnboarding(input);
   };
 
   return (
