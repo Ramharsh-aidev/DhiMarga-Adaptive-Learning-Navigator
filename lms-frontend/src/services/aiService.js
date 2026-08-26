@@ -127,8 +127,10 @@ Return ONLY valid JSON (no markdown) matching this schema:
   "availableHoursPerWeek": <number>,
   "knownSkills": ["..."],
   "suspectedGaps": ["..."],
-  "learningPreference": "project-based" | "video" | "interactive" | "reading"
+  "learningPreference": "project-based" | "video" | "interactive" | "reading",
+  "customTopics": ["topic1", "topic2"]
 }
+Note on customTopics: Extract any specific topics, tools, architectures, or domains the user mentions that they want to learn. Leave empty if they just want the standard path.
 Use sensible defaults (10 hrs/week, "video" preference) for missing fields.
 <|im_end|>
 <|im_start|>user
@@ -197,8 +199,10 @@ Return ONLY a valid JSON object with NO markdown fences:
   "availableHoursPerWeek": <number>,
   "knownSkills": ["skill1"],
   "suspectedGaps": ["gap1"],
-  "learningPreference": "project-based" | "video" | "interactive" | "reading"
+  "learningPreference": "project-based" | "video" | "interactive" | "reading",
+  "customTopics": ["topic1", "topic2"]
 }
+Note on customTopics: Extract any specific topics, tools, architectures, or domains the user mentions that they want to learn (e.g., "LLMs", "Transformers", "Neural Networks", "React Native"). Leave empty if they just want the standard path.
 Use sensible defaults for unknown fields.
 User input: ${input}`;
 
