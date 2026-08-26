@@ -19,6 +19,7 @@ public class PathService {
     private final CapabilityGraphRepository graphRepository;
     private final GraphNodeRepository graphNodeRepository;
     private final UserPathMilestoneRepository userPathMilestoneRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public List<UserPath> getUserPaths(UUID userId) {
@@ -92,6 +93,8 @@ public class PathService {
             .map(n -> DashboardSummaryResponse.WeakSkillDto.builder().skillId(n.getSkillId()).label(n.getLabel()).build())
             .collect(Collectors.toList());
 
+        User user = userRepository.findById(userId).orElseThrow();
+
         return DashboardSummaryResponse.builder()
             .activePaths(activePaths.size())
             .activePathId(activePath.getId())
@@ -103,6 +106,8 @@ public class PathService {
             .weakSkills(weak)
             .totalTimeMinutes(activePath.getTotalTimeMinutes())
             .pathStatus(activePath.getPathStatus())
+            .xp(user.getXp() != null ? user.getXp() : 0)
+            .level(user.getLevel() != null ? user.getLevel() : 1)
             .build();
     }
     
@@ -110,10 +115,37 @@ public class PathService {
     public void updateNodeMastery(UUID pathId, String skillId, NodeUpdateRequest req) {
         UserPathNode node = userPathNodeRepository.findByUserPathIdAndSkillId(pathId, skillId)
             .orElseThrow(() -> new RuntimeException("Node not found"));
+            
+        boolean wasNotCompleted = !"completed".equals(node.getStatus());
+        
         if(req.getMasteryScore() != null) node.setMasteryScore(req.getMasteryScore());
         if(req.getEvidenceLevel() != null) node.setEvidenceLevel(req.getEvidenceLevel());
         if(req.getStatus() != null) node.setStatus(req.getStatus());
         if(req.getEstimatedHours() != null) node.setEstimatedHours(req.getEstimatedHours());
+        
+        // Handle XP and Level updates
+        if (wasNotCompleted && "completed".equals(node.getStatus())) {
+            UserPath path = userPathRepository.findById(pathId).orElseThrow();
+            User user = userRepository.findById(path.getUserId()).orElseThrow();
+            
+            int hours = node.getEstimatedHours() != null ? node.getEstimatedHours().intValue() : 3;
+            // Base XP: 10 per hour.
+            int earnedXp = hours * 10;
+            
+            // Bonus for recovering a gap
+            if ("gap".equals(req.getStatus()) || (req.getEvidenceLevel() != null && req.getEvidenceLevel().equals("strong_recovery"))) {
+                earnedXp += 50; // Recovery bonus
+            }
+            
+            user.setXp(user.getXp() + earnedXp);
+            
+            // Calculate Level: Level = (XP / 100) + 1
+            int newLevel = (user.getXp() / 100) + 1;
+            user.setLevel(newLevel);
+            
+            userRepository.save(user);
+        }
+        
         userPathNodeRepository.save(node);
     }
     

@@ -16,6 +16,10 @@ public class DashboardSummaryResponse {
     private List<WeakSkillDto> weakSkills;
     private int totalTimeMinutes;
     private String pathStatus;
+    
+    // User Progression
+    private int xp;
+    private int level;
 
     @Data @Builder
     public static class NextSkillDto {

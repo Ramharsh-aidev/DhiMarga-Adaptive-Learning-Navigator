@@ -46,6 +46,14 @@ public class User implements UserDetails {
     @Builder.Default
     private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
 
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    @Builder.Default
+    private Integer xp = 0;
+
+    @Column(nullable = false, columnDefinition = "integer default 1")
+    @Builder.Default
+    private Integer level = 1;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
