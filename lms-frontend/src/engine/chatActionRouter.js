@@ -30,8 +30,11 @@ export const routeChatAction = (intent, payload, currentState, dispatch) => {
       break;
       
     case 'UPDATE_CONSTRAINT':
-      // payload: { field, value } e.g., deadline, hours
       dispatch({ type: 'UPDATE_CONSTRAINT', payload });
+      break;
+      
+    case 'UPDATE_GOAL':
+      dispatch({ type: 'UPDATE_GOAL', payload });
       break;
       
     case 'TRIGGER_RECOVERY':

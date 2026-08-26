@@ -101,6 +101,18 @@ export const aiService = {
     };
   },
 
+  generateWeeklyPlan: async (context) => {
+    if (GEMINI_API_KEY) {
+      try {
+        console.log('[AI] generateWeeklyPlan → Gemini');
+        return await callGeminiWeeklyPlan(context);
+      } catch (err) {
+        console.warn('[AI] Gemini weekly plan generation failed:', err.message);
+      }
+    }
+    return null;
+  },
+
   generateQuestions: async (skillId, count = 5) => {
     if (GEMINI_API_KEY) {
       try {
@@ -228,25 +240,51 @@ async function callGeminiChat(message, context, dispatch) {
   const existingSkills = Object.keys(context.capabilityGraph?.nodes || {}).join(', ');
   const currentPath = (context.currentPath || []).map(n => n.skillId).join(', ');
 
-  const prompt = `You are the Adaptive Learning Navigator AI for a personalized LMS.
+  // Calculate stats for AI Coach context
+  const verifiedCount = Object.values(context.learnerState || {}).filter(ls => ls.status === 'verified').length;
+  const gaps = Object.entries(context.learnerState || {}).filter(([_, ls]) => ls.status === 'gap').map(([id]) => id);
+  
+  // Find current active node (Sprint 6 logic)
+  let currentNodeId = null;
+  if (context.currentPath) {
+    let node = context.currentPath.find(n => context.learnerState[n.skillId]?.status === 'gap');
+    if (!node) {
+      node = context.currentPath.find(n => {
+        const ls = context.learnerState[n.skillId];
+        if (ls?.status === 'verified' || ls?.status === 'skipped') return false;
+        if (context.capabilityGraph?.nodes[n.skillId]) {
+          const prereqs = context.capabilityGraph.nodes[n.skillId].prerequisites || [];
+          return prereqs.every(reqId => {
+            const s = context.learnerState[reqId]?.status;
+            return s === 'verified' || s === 'skipped';
+          });
+        }
+        return false;
+      });
+    }
+    if (node) currentNodeId = node.skillId;
+  }
+
+  const prompt = `You are the Adaptive Learning Navigator AI for DhiMārga. You are an empathetic, highly intelligent AI Learning Coach.
 User context:
-- Goal role: ${context.goal?.targetRole || 'unknown'}
+- Goal role: ${context.goal?.targetRole || 'unknown'} (Budget: ${context.goal?.availableHoursPerWeek || 10}h/week, Deadline: ${context.goal?.deadline || 'unknown'})
 - Path status: ${context.pathStatus || 'planning'}
-- Current path skills: ${currentPath || 'none yet'}
+- Learner Stats: Level ${context.userProgress?.level || 1} (${context.userProgress?.xp || 0} XP), ${verifiedCount} skills mastered.
+- Current Active Mission/Skill: ${currentNodeId || 'none'}
+- Foundational Debt / Gaps: ${gaps.length > 0 ? gaps.join(', ') : 'None!'}
 - Known graph skills: ${existingSkills}
+
+As a coach, if the user asks a concept question, tutor them using the Socratic method. If they are struggling with a gap, encourage them.
 
 Analyze the user's message and respond with ONLY valid JSON (no markdown, no fences):
 {
-  "reply": "<friendly concise response>",
+  "reply": "<friendly concise response, acting as a coach/tutor>",
   "action": <action object or null>
 }
 
-AVAILABLE ACTIONS — pick the most appropriate one:
+AVAILABLE ACTIONS — pick the most appropriate one, or null if just chatting/tutoring:
 
-1. Add a SINGLE existing skill:
-   {"type": "ADD_SKILL", "payload": {"skillId": "<existing_skill_id>"}}
-
-2. Add a NEW TOPIC with full sub-skill breakdown (use when user asks about a broad concept not in the graph, or wants to explore something deeply):
+1. Add a NEW TOPIC with full sub-skill breakdown (use when user wants to explore something deeply):
    {"type": "ADD_SUBTREE", "payload": {"topic": "<topic name>", "nodes": [
      {
        "id": "<snake_case_id>", 
@@ -262,27 +300,26 @@ AVAILABLE ACTIONS — pick the most appropriate one:
    ]}}
    IMPORTANT: For ADD_SUBTREE, include ALL prerequisite and unlock relationships between the new nodes. Always start from foundational nodes (prerequisites: []) and build up. Make sure to provide a valid, highly-relevant real-world URL for resourceUrl (like YouTube, official docs, or reputable tutorials) so the user actually has content to learn from.
 
-3. Remove one or more skills from the path (e.g. if user already knows them):
+2. Remove one or more skills from the path (e.g. if user already knows them):
    {"type": "REMOVE_SKILLS", "payload": {"skillIds": ["<skill_id_1>", "<skill_id_2>"]}}
 
-4. Update estimated hours for a skill:
-   {"type": "CONFIGURE_SKILL", "payload": {"skillId": "<skill_id>", "estimatedHours": <number>}}
+3. Update estimated hours or availability (Sprint 6 Path Intelligence):
+   {"type": "UPDATE_GOAL", "payload": {"availableHoursPerWeek": <number>}}
 
-5. Replan the entire path:
+4. Replan the entire path:
    {"type": "REPLAN"}
 
-6. No action needed:
+5. No action needed (Just chatting, coaching, or explaining a concept):
    null
 
 RULES:
-- Use ADD_SUBTREE when user mentions a broad topic like "reinforcement learning", "computer vision", "NLP", "system design", etc.
-- Use ADD_SKILL only for simple, specific additions of already-known skills.
-- Use REMOVE_SKILLS to remove skills. Match the exact skillIds from the current path.
-- NEVER use REPLAN just to remove skills or add skills. Only use REPLAN if the user wants to start over.
+- Use ADD_SUBTREE when user mentions a broad topic to add.
+- Use UPDATE_GOAL if the user says they have less/more time per week.
+- Be extremely encouraging and context-aware in your 'reply' field. Mention their current node or XP if relevant.
 - Always return exactly one action or null.
 
 Recent Chat History:
-${(context.chatHistory || []).slice(-4).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+${(context.chatHistory || []).slice(-6).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
 
 User message: ${message}`;
 
@@ -392,6 +429,55 @@ Example format:
   const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
   if (jsonMatch) cleaned = jsonMatch[0];
 
+  return JSON.parse(cleaned);
+}
+
+async function callGeminiWeeklyPlan(context) {
+  const currentPath = (context.currentPath || []).filter(n => {
+    const status = context.learnerState[n.skillId]?.status;
+    return status !== 'verified' && status !== 'skipped';
+  });
+  
+  const pathData = currentPath.map(n => ({
+    skillId: n.skillId,
+    label: n.nodeRef?.label || n.skillId,
+    estimatedHours: n.estimatedHours || 3,
+    status: context.learnerState[n.skillId]?.status || 'upcoming'
+  }));
+
+  const prompt = `You are an AI Study Planner. Create a 7-day schedule for the user based on their available hours.
+User Goal: ${context.goal?.targetRole || 'unknown'}
+Available Hours Per Week: ${context.goal?.availableHoursPerWeek || 10}
+Hours Per Day (approx): ${Math.round((context.goal?.availableHoursPerWeek || 10) / 7 * 10) / 10}
+
+Remaining Skills to learn:
+${JSON.stringify(pathData.slice(0, 10), null, 2)}
+
+Return ONLY valid JSON matching this schema:
+{
+  "summary": "Brief encouraging message about the week's plan",
+  "days": [
+    {
+      "day": 1,
+      "title": "Monday Focus",
+      "tasks": [
+        { "skillId": "...", "label": "...", "allocatedHours": 2, "type": "theory" | "practice" | "review" }
+      ]
+    }
+  ]
+}
+
+Make the plan realistic. Don't schedule more hours in a day than reasonable. If they have gaps, schedule "review" tasks for those first.`;
+
+  const text = await callGemini({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: "application/json" }
+  });
+
+  let cleaned = text.trim().replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+  
   return JSON.parse(cleaned);
 }
 
