@@ -59,6 +59,10 @@ public class UserPath {
     
     private LocalDateTime lastActiveAt;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private String weeklyPlan;
+
     @OneToMany(mappedBy = "userPath", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sequenceOrder ASC")
     @Builder.Default

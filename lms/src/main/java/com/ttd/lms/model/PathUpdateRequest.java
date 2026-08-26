@@ -6,4 +6,5 @@ public class PathUpdateRequest {
     private Integer deadlineWeeks;
     private Integer hoursPerWeek;
     private Integer totalTimeMinutes;
+    private String weeklyPlan;
 }

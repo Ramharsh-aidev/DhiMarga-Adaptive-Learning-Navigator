@@ -57,6 +57,13 @@ public class PathController {
         return ResponseEntity.ok(pathService.getPathById(pathId));
     }
 
+    @PutMapping("/{pathId}")
+    public ResponseEntity<UserPath> updatePath(
+            @PathVariable UUID pathId,
+            @RequestBody com.ttd.lms.model.PathUpdateRequest request) {
+        return ResponseEntity.ok(pathService.updatePath(pathId, request));
+    }
+
     @PutMapping("/{pathId}/content-mode")
     public ResponseEntity<UserPath> updateContentMode(@PathVariable UUID pathId, @RequestBody java.util.Map<String, String> request) {
         return ResponseEntity.ok(pathService.updateContentMode(pathId, request.get("contentMode")));

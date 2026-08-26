@@ -8,4 +8,5 @@ public class NodeUpdateRequest {
     private String evidenceLevel;
     private String status;
     private BigDecimal estimatedHours;
+    private Integer sequenceOrder;
 }

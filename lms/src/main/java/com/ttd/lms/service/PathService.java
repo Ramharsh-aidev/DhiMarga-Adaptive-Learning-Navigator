@@ -20,6 +20,7 @@ public class PathService {
     private final GraphNodeRepository graphNodeRepository;
     private final UserPathMilestoneRepository userPathMilestoneRepository;
     private final UserRepository userRepository;
+    private final BadgeService badgeService;
 
     @Transactional(readOnly = true)
     public List<UserPath> getUserPaths(UUID userId) {
@@ -112,6 +113,19 @@ public class PathService {
     }
     
     @Transactional
+    public UserPath updatePath(UUID pathId, com.ttd.lms.model.PathUpdateRequest req) {
+        UserPath path = userPathRepository.findById(pathId)
+            .orElseThrow(() -> new RuntimeException("Path not found"));
+            
+        if (req.getDeadlineWeeks() != null) path.setDeadlineWeeks(req.getDeadlineWeeks());
+        if (req.getHoursPerWeek() != null) path.setHoursPerWeek(req.getHoursPerWeek());
+        if (req.getTotalTimeMinutes() != null) path.setTotalTimeMinutes(req.getTotalTimeMinutes());
+        if (req.getWeeklyPlan() != null) path.setWeeklyPlan(req.getWeeklyPlan());
+        
+        return userPathRepository.save(path);
+    }
+
+    @Transactional
     public void updateNodeMastery(UUID pathId, String skillId, NodeUpdateRequest req) {
         UserPathNode node = userPathNodeRepository.findByUserPathIdAndSkillId(pathId, skillId)
             .orElseThrow(() -> new RuntimeException("Node not found"));
@@ -122,6 +136,7 @@ public class PathService {
         if(req.getEvidenceLevel() != null) node.setEvidenceLevel(req.getEvidenceLevel());
         if(req.getStatus() != null) node.setStatus(req.getStatus());
         if(req.getEstimatedHours() != null) node.setEstimatedHours(req.getEstimatedHours());
+        if(req.getSequenceOrder() != null) node.setSequenceOrder(req.getSequenceOrder());
         
         // Handle XP and Level updates
         if (wasNotCompleted && "completed".equals(node.getStatus())) {
@@ -143,7 +158,28 @@ public class PathService {
             int newLevel = (user.getXp() / 100) + 1;
             user.setLevel(newLevel);
             
+            // Streak Calculation
+            java.time.LocalDate today = java.time.LocalDate.now();
+            if (user.getLastActiveDate() == null) {
+                user.setCurrentStreak(1);
+            } else if (user.getLastActiveDate().equals(today.minusDays(1))) {
+                user.setCurrentStreak(user.getCurrentStreak() + 1);
+            } else if (!user.getLastActiveDate().equals(today)) {
+                user.setCurrentStreak(1);
+            }
+            user.setLastActiveDate(today);
+
             userRepository.save(user);
+
+            // Award Streak Badges
+            try {
+                int streak = user.getCurrentStreak();
+                if (streak == 7 || streak == 14 || streak == 30) {
+                    badgeService.awardStreakBadge(user.getId(), streak);
+                }
+            } catch (Exception e) {
+                // Ignore badge failure
+            }
         }
         
         userPathNodeRepository.save(node);
@@ -221,6 +257,12 @@ public class PathService {
         milestone.setIsCompleted(!milestone.getIsCompleted());
         if (milestone.getIsCompleted()) {
             milestone.setCompletedAt(java.time.LocalDateTime.now());
+            // Award Milestone Badge
+            try {
+                badgeService.awardMilestoneBadge(milestone.getUserPath().getUserId(), pathId, milestone.getTitle());
+            } catch (Exception e) {
+                // Ignore
+            }
         } else {
             milestone.setCompletedAt(null);
         }
