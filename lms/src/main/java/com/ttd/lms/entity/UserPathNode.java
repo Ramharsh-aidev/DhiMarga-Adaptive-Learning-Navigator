@@ -16,6 +16,8 @@ import java.util.UUID;
     @UniqueConstraint(columnNames = {"user_path_id", "skill_id"})
 })
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = {"userPath", "graphNode"})
 public class UserPathNode {
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
