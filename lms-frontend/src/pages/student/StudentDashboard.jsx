@@ -9,6 +9,9 @@ import StatsGrid from '../../components/ui/student/StatsGrid';
 import CoursesSection from '../../components/ui/student/CoursesSection';
 import TasksSection from '../../components/ui/student/TasksSection';
 import NavigatorSummaryWidget from '../../components/ui/student/NavigatorSummaryWidget';
+import PathHealthWidget from '../../components/ui/student/PathHealthWidget';
+import StreakCounter from '../../components/ui/student/StreakCounter';
+import AIInterventionModal from '../../components/ui/student/AIInterventionModal';
 import useDashboardData from '../../hooks/useDashboardData';
 import { RefreshCw } from 'lucide-react';
 
@@ -53,10 +56,13 @@ const StudentDashboard = () => {
         )}
 
         <div className="flex items-start justify-between mb-6">
-          <WelcomeSection userName={user?.name} />
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <WelcomeSection userName={user?.name} />
+            <StreakCounter streak={user?.currentStreak || 0} />
+          </div>
           <div className="flex items-center gap-3 text-sm text-slate-400 mt-2 shrink-0">
             {lastUpdatedAt && (
-              <span>Updated {new Date(lastUpdatedAt).toLocaleTimeString()}</span>
+              <span className="hidden sm:inline">Updated {new Date(lastUpdatedAt).toLocaleTimeString()}</span>
             )}
             <button
               onClick={handleRefresh}
@@ -70,7 +76,12 @@ const StudentDashboard = () => {
         </div>
 
         {/* Navigator widget — only shown if at least one path is active */}
-        {navigatorStats.activePaths > 0 && <NavigatorSummaryWidget />}
+        {navigatorStats.activePaths > 0 && (
+          <div className="flex flex-col gap-6 mb-8">
+            <NavigatorSummaryWidget />
+            <PathHealthWidget />
+          </div>
+        )}
 
         <StatsGrid stats={courseStats} navigatorStats={navigatorStats} />
 
@@ -90,6 +101,8 @@ const StudentDashboard = () => {
             />
           </div>
         </div>
+        
+        <AIInterventionModal />
       </div>
     </Layout>
   );

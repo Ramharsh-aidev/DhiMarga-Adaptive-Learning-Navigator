@@ -43,21 +43,21 @@ const Sidebar = ({ isOpen, onClose }) => {
       },
       {
         icon: LayoutDashboard,
-        label: 'Dashboard',
+        label: 'Main Dashboard',
         path: '/student/dashboard',
-        description: 'Overview & Stats'
+        description: 'Unified Overview'
       },
       {
         icon: BookOpen,
         label: 'My Courses',
         path: '/student/courses',
-        description: 'Enrolled Courses'
+        description: 'Industry-Led Courses'
       },
       {
         icon: TrendingUp,
-        label: 'Progress',
+        label: 'Industry Progress',
         path: '/student/progress',
-        description: 'Track Learning'
+        description: 'Mentor-Led Stats'
       },
       {
         icon: Compass,

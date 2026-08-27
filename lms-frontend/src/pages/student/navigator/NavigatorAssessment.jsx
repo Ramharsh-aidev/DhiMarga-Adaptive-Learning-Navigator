@@ -131,7 +131,7 @@ const NavigatorAssessment = () => {
     // Give them full marks for recovering a gap via tutoring
     const newSummary = await dispatch({
       type: 'UPDATE_MASTERY',
-      payload: { skillId, masteryScore: 100 }
+      payload: { skillId, masteryScore: 100, isRecovery: true }
     });
     
     if (newSummary && newSummary.xp > prevXp) {

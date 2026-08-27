@@ -279,11 +279,12 @@ export const NavigatorProvider = ({ children }) => {
       
       case 'UPDATE_MASTERY': {
         if (!currentActivePathId) return null;
-        const { skillId, masteryScore } = action.payload;
+        const { skillId, masteryScore, isRecovery } = action.payload;
         await updateNodeMastery(currentActivePathId, skillId, {
           masteryScore,
-          evidenceLevel: 'strong',
-          status: masteryScore >= 70 ? 'completed' : 'gap'
+          evidenceLevel: isRecovery ? 'strong_recovery' : 'strong',
+          status: masteryScore >= 70 ? 'completed' : 'gap',
+          isRecovery
         });
         
         // Refresh details

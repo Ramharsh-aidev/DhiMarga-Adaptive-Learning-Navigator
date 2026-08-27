@@ -90,85 +90,83 @@ const Progress = () => {
           />
         )}
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Progress</h1>
-          <p className="text-gray-600">Track your learning journey and achievements</p>
+        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-violet-600 font-bold mb-2 uppercase tracking-wider text-sm">
+              <BookOpen size={18} />
+              Mentor-Led Track
+            </div>
+            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-2">Industry Progress</h1>
+            <p className="text-slate-500 font-medium">Track your achievements in mentor-led and standard courses</p>
+          </div>
         </div>
 
         {courses.length > 0 ? (
           <>
             {/* Overall Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <Card className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <BookOpen className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{stats.totalCourses}</div>
-                    <div className="text-sm text-gray-600">Total Courses</div>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex items-center gap-4">
+                <div className="w-14 h-14 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                  <BookOpen className="w-7 h-7" />
                 </div>
-              </Card>
+                <div>
+                  <div className="text-3xl font-black text-slate-800">{stats.totalCourses}</div>
+                  <div className="text-sm font-bold text-slate-500">Total Courses</div>
+                </div>
+              </div>
 
-              <Card className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-indigo-600" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{stats.avgProgress}%</div>
-                    <div className="text-sm text-gray-600">Avg Progress</div>
-                  </div>
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex items-center gap-4">
+                <div className="w-14 h-14 bg-violet-50 rounded-xl flex items-center justify-center text-violet-600">
+                  <TrendingUp className="w-7 h-7" />
                 </div>
-              </Card>
+                <div>
+                  <div className="text-3xl font-black text-slate-800">{stats.avgProgress}%</div>
+                  <div className="text-sm font-bold text-slate-500">Avg Progress</div>
+                </div>
+              </div>
 
-              <Card className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Award className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{stats.totalCompleted}</div>
-                    <div className="text-sm text-gray-600">Completed</div>
-                  </div>
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex items-center gap-4">
+                <div className="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
+                  <Award className="w-7 h-7" />
                 </div>
-              </Card>
+                <div>
+                  <div className="text-3xl font-black text-slate-800">{stats.totalCompleted}</div>
+                  <div className="text-sm font-bold text-slate-500">Completed</div>
+                </div>
+              </div>
 
-              <Card className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Target className="w-6 h-6 text-orange-600" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">
-                      {stats.totalCourses - stats.totalCompleted}
-                    </div>
-                    <div className="text-sm text-gray-600">In Progress</div>
-                  </div>
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex items-center gap-4">
+                <div className="w-14 h-14 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+                  <Target className="w-7 h-7" />
                 </div>
-              </Card>
+                <div>
+                  <div className="text-3xl font-black text-slate-800">
+                    {stats.totalCourses - stats.totalCompleted}
+                  </div>
+                  <div className="text-sm font-bold text-slate-500">In Progress</div>
+                </div>
+              </div>
             </div>
 
             {/* Course Selection */}
-            <Card className="p-6 mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Course</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-8">
+              <h2 className="text-lg font-bold text-slate-800 mb-4">Select Course</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {courses.map((course) => (
                   <button
                     key={course.courseId}
                     onClick={() => setSelectedCourseId(course.courseId)}
-                    className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                    className={`p-5 rounded-xl border-2 text-left transition-all ${
                       selectedCourseId === course.courseId
-                        ? 'border-indigo-500 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100'
+                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
-                    <h3 className="font-semibold text-gray-900 mb-2">{course.courseTitle}</h3>
-                    <div className="text-sm text-gray-600 mb-2">
-                      {course.completedChapters} / {course.totalChapters} chapters
+                    <h3 className="font-bold text-slate-900 mb-2 truncate">{course.courseTitle}</h3>
+                    <div className="text-sm font-medium text-slate-500 mb-3">
+                      {course.completedChapters} / {course.totalChapters} modules
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-slate-200 rounded-full h-2">
                       <div
                         className="bg-indigo-600 h-2 rounded-full transition-all"
                         style={{ width: `${course.progressPercentage}%` }}
@@ -177,41 +175,42 @@ const Progress = () => {
                   </button>
                 ))}
               </div>
-            </Card>
+            </div>
 
             {/* Detailed Progress Chart */}
             {loadingDetails ? (
-              <Card className="p-12">
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
-                  <span className="ml-3 text-gray-600">Loading chapter details...</span>
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 shadow-sm">
+                <div className="flex flex-col items-center justify-center text-slate-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4" />
+                  <span className="text-sm font-medium">Loading chapter details...</span>
                 </div>
-              </Card>
+              </div>
             ) : detailedProgress ? (
-              <>
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                 <ProgressChart course={detailedProgress} />
                 
-                <div className="mt-6 flex justify-center">
+                <div className="mt-8 flex justify-center border-t border-slate-100 pt-6">
                   <Button
                     variant="primary"
                     onClick={() => navigate(`/student/courses/${selectedCourseId}`)}
+                    className="px-8 py-3 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 transition-colors"
                   >
-                    Continue Learning
+                    Resume Course
                   </Button>
                 </div>
-              </>
+              </div>
             ) : null}
           </>
         ) : (
-          <Card className="p-12">
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 shadow-sm">
             <EmptyState
               icon={BookOpen}
-              title="No Progress Yet"
-              description="You haven't been assigned to any courses yet. Contact your mentor to get started."
+              title="No Course Progress Yet"
+              description="You haven't been assigned to any industry-led courses yet. Contact your mentor to get started."
               actionLabel="Back to Dashboard"
               onAction={() => navigate('/student/dashboard')}
             />
-          </Card>
+          </div>
         )}
       </div>
     </Layout>
