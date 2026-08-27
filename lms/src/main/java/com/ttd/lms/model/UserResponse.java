@@ -22,4 +22,5 @@ public class UserResponse {
     private Role role;
     private ApprovalStatus approvalStatus;
     private LocalDateTime createdAt;
+    private Integer currentStreak;
 }

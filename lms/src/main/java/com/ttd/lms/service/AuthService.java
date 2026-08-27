@@ -135,6 +135,7 @@ public class AuthService {
                 .role(user.getRole())
                 .approvalStatus(user.getApprovalStatus())
                 .createdAt(user.getCreatedAt())
+                .currentStreak(user.getCurrentStreak() != null ? user.getCurrentStreak() : 0)
                 .build();
     }
 }

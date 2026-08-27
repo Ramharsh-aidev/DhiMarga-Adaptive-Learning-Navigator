@@ -148,7 +148,7 @@ public class PathService {
             int earnedXp = hours * 10;
             
             // Bonus for recovering a gap
-            if ("gap".equals(req.getStatus()) || (req.getEvidenceLevel() != null && req.getEvidenceLevel().equals("strong_recovery"))) {
+            if (Boolean.TRUE.equals(req.getIsRecovery()) || (req.getEvidenceLevel() != null && req.getEvidenceLevel().equals("strong_recovery"))) {
                 earnedXp += 50; // Recovery bonus
             }
             
