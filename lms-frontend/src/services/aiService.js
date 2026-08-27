@@ -41,6 +41,46 @@ async function callGemini(payload) {
  * Priority: HuggingFace → Gemini → Deterministic keyword fallback
  */
 export const aiService = {
+  generateInterventions: async (stateData) => {
+    if (!GEMINI_API_KEY) {
+      return {
+        diagnosis: "AI key missing. Unable to analyze path.",
+        options: []
+      };
+    }
+    const prompt = `
+      You are an expert Educational Data Scientist for DhiMarga LMS.
+      Analyze this student's path data:
+      Debt: ${stateData.debt} points
+      Gaps: ${stateData.activeGaps}
+      Progress: ${stateData.progress}%
+      
+      Respond STRICTLY in JSON format:
+      {
+        "diagnosis": "1-2 sentences explaining their current struggles",
+        "options": [
+          {
+            "id": "action_id",
+            "title": "Action Title",
+            "description": "What they should do",
+            "impact": "e.g. +10% Efficiency",
+            "impactColor": "text-green-600 bg-green-100",
+            "actionText": "Button Text"
+          }
+        ]
+      }
+      Provide exactly 3 actionable options. Do not include markdown \`\`\`json blocks.
+    `;
+    
+    try {
+      const res = await callGemini(prompt);
+      const text = res.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(text);
+    } catch (err) {
+      console.error("[AI] Error generating interventions", err);
+      throw err;
+    }
+  },
 
   parseGoal: async (input) => {
     if (HF_API_KEY) {
