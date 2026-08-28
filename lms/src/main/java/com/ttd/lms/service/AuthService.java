@@ -77,7 +77,7 @@ public class AuthService {
         return new AuthResponse(token, userResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(@NonNull LoginRequest request) {
         log.info("Login attempt for email: {}", request.getEmail());
 
@@ -91,6 +91,16 @@ public class AuthService {
             );
 
             User user = (User) authentication.getPrincipal();
+
+            // Update Streak Logic
+            java.time.LocalDate today = java.time.LocalDate.now();
+            if (user.getLastActiveDate() == null || user.getLastActiveDate().isBefore(today.minusDays(1))) {
+                user.setCurrentStreak(1);
+            } else if (user.getLastActiveDate().isEqual(today.minusDays(1))) {
+                user.setCurrentStreak((user.getCurrentStreak() == null ? 0 : user.getCurrentStreak()) + 1);
+            }
+            user.setLastActiveDate(today);
+            userRepository.save(user);
 
             // Check if mentor is approved
             if (user.getRole() == Role.MENTOR && user.getApprovalStatus() != ApprovalStatus.APPROVED) {
