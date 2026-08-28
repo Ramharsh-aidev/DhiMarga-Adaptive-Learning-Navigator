@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @SuppressWarnings("unused")
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
@@ -30,4 +33,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /* Find all approved mentors*/
     @Query("SELECT u FROM User u WHERE u.role = 'MENTOR' AND u.approvalStatus = 'APPROVED'")
     List<User> findApprovedMentors();
+
+    Page<User> findByRoleOrderByXpDesc(Role role, Pageable pageable);
 }
