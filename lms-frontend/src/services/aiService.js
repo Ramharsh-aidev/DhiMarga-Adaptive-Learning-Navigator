@@ -73,12 +73,97 @@ export const aiService = {
     `;
     
     try {
-      const res = await callGemini(prompt);
+      const res = await callGemini({ contents: [{ parts: [{ text: prompt }] }] });
       const text = res.replace(/```json/g, '').replace(/```/g, '').trim();
       return JSON.parse(text);
     } catch (err) {
       console.error("[AI] Error generating interventions", err);
       throw err;
+    }
+  },
+
+  analyzeOnboardingAnswers: async (answers) => {
+    if (!GEMINI_API_KEY) {
+      throw new Error("AI key missing. Cannot analyze onboarding.");
+    }
+    const prompt = `
+      You are an expert Educational Data Scientist for DhiMarga LMS.
+      A student has answered an onboarding questionnaire. Based on their answers, deduce their target role/goal (if they weren't sure) and recommend the best learning path topology for them.
+      
+      User's Answers:
+      ${JSON.stringify(answers, null, 2)}
+      
+      You must evaluate three potential path topologies:
+      1. "fastest": Minimum viable skills to get a job/reach the goal quickly. (Strips out theory/advanced nodes).
+      2. "deepest": Comprehensive mastery including all foundational and advanced theory.
+      3. "project-first": Prioritizes hands-on practical skills and projects early in the path.
+
+      Respond STRICTLY in JSON format:
+      {
+        "targetRole": "MUST BE ONE OF: ml_engineer, data_analyst, fullstack_dev, cloud_engineer",
+        "targetRoleDisplay": "e.g., Machine Learning Engineer",
+        "recommendedMode": "fastest | deepest | project-first",
+        "recommendationReason": "1-2 sentences explaining WHY this mode is best for their specific answers",
+        "options": [
+          {
+            "id": "fastest",
+            "title": "Fastest Route",
+            "description": "Streamlined for speed. Focuses only on essential skills.",
+            "estimatedTime": "e.g., 4 weeks"
+          },
+          {
+            "id": "deepest",
+            "title": "Deep Dive",
+            "description": "Comprehensive mastery. Includes deep theory and advanced topics.",
+            "estimatedTime": "e.g., 12 weeks"
+          },
+          {
+            "id": "project-first",
+            "title": "Project-First",
+            "description": "Learn by doing. Heavy focus on practical implementation early on.",
+            "estimatedTime": "e.g., 8 weeks"
+          }
+        ]
+      }
+      Do not include markdown \`\`\`json blocks. Return ONLY the JSON.
+    `;
+    
+    try {
+      const res = await callGemini({ contents: [{ parts: [{ text: prompt }] }] });
+      const text = res.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(text);
+    } catch (err) {
+      console.error("[AI] Error analyzing onboarding answers", err);
+      throw err;
+    }
+  },
+
+  extractKnownSkills: async (contextText, graphNodes) => {
+    if (!GEMINI_API_KEY || !contextText || !graphNodes || graphNodes.length === 0) return [];
+    
+    // Create a simplified list of nodes for the AI to match against
+    const nodesList = graphNodes.map(n => ({ id: n.skillId, label: n.label }));
+    
+    const prompt = `You are an AI mapping student context to curriculum nodes.
+    The student provided this context about what they already know:
+    "${contextText}"
+    
+    Here are the available nodes in their target curriculum path:
+    ${JSON.stringify(nodesList, null, 2)}
+    
+    Return a JSON array of the "id" strings for the nodes that the student ALREADY KNOWS based on their context. 
+    Only include nodes if their context strongly implies they have already mastered the core concepts of that node.
+    Do not include markdown \`\`\`json blocks. Return ONLY the JSON array (e.g. ["python_basics", "calculus_1"]).
+    `;
+    
+    try {
+      const res = await callGemini({ contents: [{ parts: [{ text: prompt }] }] });
+      const text = res.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(text);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.error("[AI] Error extracting known skills", err);
+      return [];
     }
   },
 
@@ -334,17 +419,19 @@ async function callGeminiChat(message, context, dispatch) {
   
   // Find current active node (Sprint 6 logic)
   let currentNodeId = null;
+  const learnerState = context.learnerState || {};
   if (context.currentPath) {
-    let node = context.currentPath.find(n => context.learnerState[n.skillId]?.status === 'gap');
+    let node = context.currentPath.find(n => learnerState[n.skillId]?.status === 'gap');
     if (!node) {
       node = context.currentPath.find(n => {
-        const ls = context.learnerState[n.skillId];
+        const ls = learnerState[n.skillId];
         if (ls?.status === 'verified' || ls?.status === 'skipped') return false;
         if (context.capabilityGraph?.nodes[n.skillId]) {
           const prereqs = context.capabilityGraph.nodes[n.skillId].prerequisites || [];
           return prereqs.every(reqId => {
-            const s = context.learnerState[reqId]?.status;
-            return s === 'verified' || s === 'skipped';
+            if (context.goal?.knownSkills && context.goal.knownSkills.includes(reqId)) return true;
+            const s = learnerState[reqId]?.status;
+            return s === 'verified' || s === 'skipped' || s === 'completed';
           });
         }
         return false;
@@ -620,8 +707,9 @@ Return ONLY a JSON object exactly matching this schema, with no markdown formatt
 }
 
 async function callGeminiWeeklyPlan(context) {
+  const learnerState = context.learnerState || {};
   const currentPath = (context.currentPath || []).filter(n => {
-    const status = context.learnerState[n.skillId]?.status;
+    const status = learnerState[n.skillId]?.status;
     return status !== 'verified' && status !== 'skipped';
   });
   
@@ -629,7 +717,7 @@ async function callGeminiWeeklyPlan(context) {
     skillId: n.skillId,
     label: n.nodeRef?.label || n.skillId,
     estimatedHours: n.estimatedHours || 3,
-    status: context.learnerState[n.skillId]?.status || 'upcoming'
+    status: learnerState[n.skillId]?.status || 'upcoming'
   }));
 
   const prompt = `You are an AI Study Planner. Create a 7-day schedule for the user based on their available hours.
