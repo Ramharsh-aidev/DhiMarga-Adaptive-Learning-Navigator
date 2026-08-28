@@ -47,19 +47,75 @@ public class PathService {
         
         // Setup initial nodes based on graph template
         List<GraphNode> templateNodes = graphNodeRepository.findByGraphIdOrderBySequenceOrderAsc(graph.getId());
-        for (int i = 0; i < templateNodes.size(); i++) {
-            GraphNode templateNode = templateNodes.get(i);
-            UserPathNode node = UserPathNode.builder()
-                .userPath(path)
-                .graphNode(templateNode)
-                .skillId(templateNode.getSkillId())
-                .label(templateNode.getLabel())
-                .sequenceOrder(i + 1)
-                // Determine initial status based on knownSkills
-                .status(request.getKnownSkills() != null && request.getKnownSkills().contains(templateNode.getSkillId()) ? "completed" : "upcoming")
-                .masteryScore(request.getKnownSkills() != null && request.getKnownSkills().contains(templateNode.getSkillId()) ? 100 : 0)
-                .build();
-            userPathNodeRepository.save(node);
+        
+        List<String> nodeOrder = request.getNodeOrder();
+        
+        // If no explicit nodeOrder is provided, but a topologyMode is, simulate the topology
+        if ((nodeOrder == null || nodeOrder.isEmpty()) && request.getTopologyMode() != null) {
+            String mode = request.getTopologyMode();
+            if ("fastest".equals(mode)) {
+                // Keep only essential nodes (simulate by keeping first 70% or skipping every 3rd)
+                templateNodes = templateNodes.stream()
+                    .filter(n -> n.getSequenceOrder() % 3 != 0) // Skip some non-essentials
+                    .collect(Collectors.toList());
+            } else if ("project-first".equals(mode)) {
+                // Try to move anything with "project" or "practical" in the label earlier
+                List<GraphNode> projects = templateNodes.stream()
+                    .filter(n -> n.getLabel().toLowerCase().contains("project") || n.getLabel().toLowerCase().contains("build"))
+                    .collect(Collectors.toList());
+                List<GraphNode> others = templateNodes.stream()
+                    .filter(n -> !projects.contains(n))
+                    .collect(Collectors.toList());
+                templateNodes.clear();
+                templateNodes.addAll(projects);
+                templateNodes.addAll(others);
+            }
+            // "deepest" just uses all nodes, which is the default
+        }
+
+        if (request.getKnownSkills() != null && !request.getKnownSkills().isEmpty()) {
+            templateNodes = templateNodes.stream()
+                .filter(n -> !request.getKnownSkills().contains(n.getSkillId()))
+                .collect(Collectors.toList());
+        }
+
+        if (nodeOrder != null && !nodeOrder.isEmpty()) {
+            // Use custom ordering and filtering
+            for (int i = 0; i < nodeOrder.size(); i++) {
+                String skillId = nodeOrder.get(i);
+                GraphNode templateNode = templateNodes.stream()
+                    .filter(n -> n.getSkillId().equals(skillId))
+                    .findFirst()
+                    .orElse(null);
+                    
+                if (templateNode != null) {
+                    UserPathNode node = UserPathNode.builder()
+                        .userPath(path)
+                        .graphNode(templateNode)
+                        .skillId(templateNode.getSkillId())
+                        .label(templateNode.getLabel())
+                        .sequenceOrder(i + 1)
+                        .status("upcoming")
+                        .masteryScore(0)
+                        .build();
+                    userPathNodeRepository.save(node);
+                }
+            }
+        } else {
+            // Default: use all template nodes in default order
+            for (int i = 0; i < templateNodes.size(); i++) {
+                GraphNode templateNode = templateNodes.get(i);
+                UserPathNode node = UserPathNode.builder()
+                    .userPath(path)
+                    .graphNode(templateNode)
+                    .skillId(templateNode.getSkillId())
+                    .label(templateNode.getLabel())
+                    .sequenceOrder(i + 1)
+                    .status("upcoming")
+                    .masteryScore(0)
+                    .build();
+                userPathNodeRepository.save(node);
+            }
         }
         
         return path;

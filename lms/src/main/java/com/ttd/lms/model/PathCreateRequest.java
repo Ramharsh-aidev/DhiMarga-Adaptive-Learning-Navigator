@@ -11,5 +11,6 @@ public class PathCreateRequest {
     private List<String> knownSkills;
     private String learningPreference;
     private String contentMode;
+    private String topologyMode;
     private List<String> nodeOrder;
 }
