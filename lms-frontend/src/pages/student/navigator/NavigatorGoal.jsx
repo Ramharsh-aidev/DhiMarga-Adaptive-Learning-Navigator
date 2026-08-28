@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, ArrowRight, ArrowLeft, Loader2, Target, Clock, Zap, Brain, Rocket, Sparkles } from 'lucide-react';
 import { usePathOnboarding } from '../../../hooks/usePathOnboarding';
@@ -7,15 +7,22 @@ import { aiService } from '../../../services/aiService';
 
 export default function NavigatorGoal() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { startOnboarding } = usePathOnboarding();
   
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({
-    goal: '',
+    goal: location.state?.prefilledRole || '',
     timeAvailability: '',
     learningStyle: '',
     additionalContext: ''
   });
+  
+  useEffect(() => {
+    if (location.state?.prefilledRole) {
+      setStep(1);
+    }
+  }, [location.state]);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -25,7 +32,7 @@ export default function NavigatorGoal() {
     { id: 'ml_engineer', label: 'Machine Learning Engineer', icon: Brain },
     { id: 'fullstack_dev', label: 'Full-Stack Developer', icon: Target },
     { id: 'data_analyst', label: 'Data Analyst', icon: Sparkles },
-    { id: 'not_sure', label: "I'm not sure yet", icon: Rocket }
+    { id: 'interview_prep', label: "Interview Prep (Upcoming)", icon: Rocket }
   ];
 
   const handleNext = () => {
