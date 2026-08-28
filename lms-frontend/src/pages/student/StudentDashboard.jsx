@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
@@ -12,12 +12,24 @@ import NavigatorSummaryWidget from '../../components/ui/student/NavigatorSummary
 import PathHealthWidget from '../../components/ui/student/PathHealthWidget';
 import StreakCounter from '../../components/ui/student/StreakCounter';
 import AIInterventionModal from '../../components/ui/student/AIInterventionModal';
+import LeaderboardWidget from '../../components/ui/student/LeaderboardWidget';
+import DashboardTour from '../../components/ui/student/DashboardTour';
 import useDashboardData from '../../hooks/useDashboardData';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, HelpCircle } from 'lucide-react';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const [runTour, setRunTour] = useState(false);
+
+  // Check if tour should run on mount
+  useEffect(() => {
+    const hasCompletedTour = localStorage.getItem('dhimarga_tour_completed');
+    if (!hasCompletedTour) {
+      setRunTour(true);
+    }
+  }, []);
 
   const {
     courseStats,
@@ -44,6 +56,7 @@ const StudentDashboard = () => {
 
   return (
     <Layout>
+      <DashboardTour run={runTour} setRun={setRunTour} />
       <div className="p-6 max-w-7xl mx-auto">
         {error && (
           <Alert
@@ -57,10 +70,22 @@ const StudentDashboard = () => {
 
         <div className="flex items-start justify-between mb-6">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <WelcomeSection userName={user?.name} />
-            <StreakCounter streak={user?.currentStreak || 0} />
+            <div className="tour-welcome">
+              <WelcomeSection userName={user?.name} />
+            </div>
+            <div className="tour-streak">
+              <StreakCounter streak={user?.currentStreak || 0} />
+            </div>
           </div>
           <div className="flex items-center gap-3 text-sm text-slate-400 mt-2 shrink-0">
+            <button
+              onClick={() => setRunTour(true)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors font-medium shadow-sm"
+              title="Start Dashboard Tour"
+            >
+              <HelpCircle size={16} />
+              <span className="hidden sm:inline">Tour</span>
+            </button>
             {lastUpdatedAt && (
               <span className="hidden sm:inline">Updated {new Date(lastUpdatedAt).toLocaleTimeString()}</span>
             )}
@@ -78,8 +103,12 @@ const StudentDashboard = () => {
         {/* Navigator widget — only shown if at least one path is active */}
         {navigatorStats.activePaths > 0 && (
           <div className="flex flex-col gap-6 mb-8">
-            <NavigatorSummaryWidget />
-            <PathHealthWidget />
+            <div className="tour-navigator">
+              <NavigatorSummaryWidget />
+            </div>
+            <div className="tour-health">
+              <PathHealthWidget />
+            </div>
           </div>
         )}
 
@@ -102,6 +131,10 @@ const StudentDashboard = () => {
           </div>
         </div>
         
+        <div className="mt-6 tour-leaderboard">
+          <LeaderboardWidget />
+        </div>
+
         <AIInterventionModal />
       </div>
     </Layout>
