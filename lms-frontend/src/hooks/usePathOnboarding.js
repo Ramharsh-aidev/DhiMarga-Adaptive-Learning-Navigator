@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNavigator } from '../context/NavigatorContext';
 import { aiService } from '../services/aiService';
+import { getGraph } from '../services/navigatorService';
 
 export const usePathOnboarding = () => {
   const { dispatch, state } = useNavigator();
@@ -9,12 +10,34 @@ export const usePathOnboarding = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const startOnboarding = async (input) => {
-    if (!input.trim() || isProcessing) return;
+    if (isProcessing) return;
     setIsProcessing(true);
 
     try {
-      // 1. Parse goal and extract any custom topics the user requested
-      const goal = await aiService.parseGoal(input);
+      let goal;
+      if (typeof input === 'string') {
+        if (!input.trim()) {
+           setIsProcessing(false);
+           return;
+        }
+        // 1. Parse goal and extract any custom topics the user requested
+        goal = await aiService.parseGoal(input);
+      } else {
+        goal = input; // Directly accept the pre-analyzed payload
+        
+        // If there's custom context, extract known skills using the graph template
+        if (goal.customContext) {
+          try {
+            const graph = await getGraph(goal.targetRole);
+            if (graph && graph.nodes) {
+              const knownSkills = await aiService.extractKnownSkills(goal.customContext, graph.nodes);
+              goal.knownSkills = knownSkills;
+            }
+          } catch (err) {
+            console.error("Failed to extract known skills", err);
+          }
+        }
+      }
       
       // 2. Dispatch to context (this creates the base path in the database and sets it active)
       await dispatch({ type: 'SET_GOAL', payload: { ...goal, forceNew: true } });

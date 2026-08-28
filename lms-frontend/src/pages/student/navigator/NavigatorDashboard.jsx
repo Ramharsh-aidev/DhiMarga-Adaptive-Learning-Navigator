@@ -73,6 +73,7 @@ const NavigatorDashboard = () => {
         if (state.capabilityGraph && state.capabilityGraph.nodes[n.skillId]) {
           const prereqs = state.capabilityGraph.nodes[n.skillId].prerequisites || [];
           return prereqs.every(reqId => {
+            if (state.goal?.knownSkills?.includes(reqId)) return true;
             const s = state.learnerState[reqId]?.status;
             return s === 'verified' || s === 'skipped';
           });

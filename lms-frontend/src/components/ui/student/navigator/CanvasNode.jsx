@@ -18,6 +18,7 @@ const CanvasNode = ({ item, isDraggable = false, isTreeMode = false }) => {
   if (state.capabilityGraph && state.capabilityGraph.nodes[item.skillId]) {
     const prereqs = state.capabilityGraph.nodes[item.skillId].prerequisites || [];
     arePrereqsMet = prereqs.every(reqId => {
+      if (state.goal?.knownSkills?.includes(reqId)) return true;
       const s = state.learnerState[reqId]?.status;
       return s === 'verified' || s === 'skipped';
     });
