@@ -122,7 +122,7 @@ export const calculateGoalReadiness = (learnerState, capabilityGraph, currentPat
     : Object.values(capabilityGraph.nodes);
 
   nodesToEvaluate.forEach(node => {
-    const state = learnerState[node.id];
+    const state = learnerState[node.skillId];
     const relevance = node.goalRelevance || 0.5;
     
     possibleSum += (node.masteryThreshold * relevance);

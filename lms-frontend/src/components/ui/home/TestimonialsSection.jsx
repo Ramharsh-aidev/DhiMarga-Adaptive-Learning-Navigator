@@ -104,14 +104,7 @@ const TestimonialsSection = () => {
 
                 {/* Author */}
                 <div className="flex items-center space-x-4 pt-6 border-t border-slate-100">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-violet-200 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <img
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      className="w-14 h-14 rounded-full bg-slate-100 relative z-10 border-2 border-white"
-                    />
-                  </div>
+
                   <div>
                     <h4 className="font-bold text-slate-900">{testimonial.name}</h4>
                     <p className="text-sm text-slate-500 font-medium">{testimonial.role}</p>
