@@ -18,7 +18,8 @@ import {
   Route,
   X,
   LogOut,
-  Home
+  Home,
+  Target
 } from 'lucide-react';
 import { USER_ROLES } from '../../utils/constants';
 
@@ -64,6 +65,18 @@ const Sidebar = ({ isOpen, onClose }) => {
         label: 'AI Navigator',
         path: '/student/navigator',
         description: 'Adaptive Path'
+      },
+      {
+        icon: Target,
+        label: 'Career Goals',
+        path: '/student/careers',
+        description: 'Explore Careers'
+      },
+      {
+        icon: Users,
+        label: 'Social',
+        path: '/student/social',
+        description: 'Community & Leaders'
       },
       {
         icon: Route,

@@ -31,6 +31,10 @@ import NavigatorDashboard from './pages/student/navigator/NavigatorDashboard';
 import NavigatorMap from './pages/student/navigator/NavigatorMap';
 import NavigatorRecovery from './pages/student/navigator/NavigatorRecovery';
 import NavigatorAssessment from './pages/student/navigator/NavigatorAssessment';
+import CareerExplorer from './pages/student/CareerExplorer';
+import CareerDetail from './pages/student/CareerDetail';
+import CareerCompare from './pages/student/CareerCompare';
+import SocialHub from './pages/student/SocialHub';
 import MyPaths from './pages/student/MyPaths';
 import { NavigatorProvider } from './context/NavigatorContext';
 
@@ -138,6 +142,38 @@ function App() {
           />
 
           {/* Navigator Routes */}
+          <Route
+            path="/student/careers"
+            element={
+              <PrivateRoute allowedRoles={[USER_ROLES.STUDENT]}>
+                <CareerExplorer />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/student/social"
+            element={
+              <PrivateRoute allowedRoles={[USER_ROLES.STUDENT]}>
+                <SocialHub />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/student/careers/compare"
+            element={
+              <PrivateRoute allowedRoles={[USER_ROLES.STUDENT]}>
+                <CareerCompare />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/student/careers/:slug"
+            element={
+              <PrivateRoute allowedRoles={[USER_ROLES.STUDENT]}>
+                <CareerDetail />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/student/paths"
             element={
