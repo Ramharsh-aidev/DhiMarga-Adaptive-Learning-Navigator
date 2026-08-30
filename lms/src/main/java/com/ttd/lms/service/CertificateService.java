@@ -295,7 +295,7 @@ public class CertificateService {
             Paragraph title = new Paragraph()
                     .add(new Text("CERTIFICATE OF COMPLETION").setBold().setFontSize(36).setFontColor(ColorConstants.BLUE))
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(80);
+                    .setMarginTop(40);
             document.add(title);
 
             // Add decorative line
@@ -308,7 +308,7 @@ public class CertificateService {
             document.add(new Paragraph("This is to certify that")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(18)
-                    .setMarginTop(40));
+                    .setMarginTop(20));
 
             // Add student name
             document.add(new Paragraph(studentName)
@@ -316,13 +316,13 @@ public class CertificateService {
                     .setFontSize(28)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontColor(ColorConstants.DARK_GRAY)
-                    .setMarginTop(20));
+                    .setMarginTop(10));
 
             // Add completion text
             document.add(new Paragraph("has successfully completed the course")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(18)
-                    .setMarginTop(30));
+                    .setMarginTop(15));
 
             // Add course title
             document.add(new Paragraph(courseTitle)
@@ -330,7 +330,7 @@ public class CertificateService {
                     .setFontSize(24)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontColor(ColorConstants.BLUE)
-                    .setMarginTop(20));
+                    .setMarginTop(10));
 
             // Add date and mentor signature
             String formattedDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy"));
@@ -340,14 +340,14 @@ public class CertificateService {
                     .add(formattedDate)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(14)
-                    .setMarginTop(60));
+                    .setMarginTop(30));
 
             document.add(new Paragraph()
                     .add(new Text("Instructor: ").setBold())
                     .add(mentorName)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(14)
-                    .setMarginTop(10));
+                    .setMarginTop(5));
 
             // Add Ramharsh's Signature
             document.add(new Paragraph("Signature: Ramharsh")
@@ -355,7 +355,7 @@ public class CertificateService {
                     .setFontSize(18)
                     .setFontColor(ColorConstants.DARK_GRAY)
                     .setTextAlignment(TextAlignment.RIGHT)
-                    .setMarginTop(20));
+                    .setMarginTop(10));
 
             // Add Stamp Image
             try {
@@ -374,7 +374,7 @@ public class CertificateService {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(12)
                     .setFontColor(ColorConstants.GRAY)
-                    .setMarginTop(40));
+                    .setMarginTop(15));
 
             document.close();
 
