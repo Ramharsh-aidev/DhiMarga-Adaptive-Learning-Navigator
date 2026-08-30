@@ -14,9 +14,9 @@ export const filterAndSortCourses = (courses, filters) => {
   // Filter by status
   if (filters.status !== 'all') {
     filtered = filtered.filter(course => {
-      if (filters.status === 'not-started') return course.progressPercentage === 0;
-      if (filters.status === 'in-progress') return course.progressPercentage > 0 && course.progressPercentage < 100;
-      if (filters.status === 'completed') return course.progressPercentage === 100;
+      if (filters.status === 'not-started') return course.completionPercentage === 0;
+      if (filters.status === 'in-progress') return course.completionPercentage > 0 && course.completionPercentage < 100;
+      if (filters.status === 'completed') return course.completionPercentage === 100;
       return true;
     });
   }
@@ -27,7 +27,7 @@ export const filterAndSortCourses = (courses, filters) => {
       case 'recent':
         return new Date(b.lastActivityAt) - new Date(a.lastActivityAt);
       case 'progress':
-        return b.progressPercentage - a.progressPercentage;
+        return b.completionPercentage - a.completionPercentage;
       case 'title':
         return a.courseTitle.localeCompare(b.courseTitle);
       case 'assigned':
@@ -44,7 +44,7 @@ export const filterAndSortCourses = (courses, filters) => {
 export const getChaptersWithLockStatus = (chapters) => {
   if (!chapters || chapters.length === 0) return [];
 
-  const firstIncompleteIndex = chapters.findIndex(ch => !ch.completed);
+  const firstIncompleteIndex = chapters.findIndex(ch => !ch.isCompleted);
 
   return chapters.map((chapter, index) => ({
     ...chapter,
@@ -61,7 +61,7 @@ export const mergeChapterProgress = (chaptersData, progressData, chapterId) => {
   
   return {
     ...chapter,
-    completed: progressChapter?.completed || false,
+    completed: progressChapter?.isCompleted || false,
     completedAt: progressChapter?.completedAt || null
   };
 };

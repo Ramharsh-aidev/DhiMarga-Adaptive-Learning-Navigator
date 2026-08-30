@@ -31,6 +31,19 @@ export const getThumbnail = (title) => {
   return emojis[key] || '📚';
 };
 
+export const transformProgressData = (progressData = []) => {
+  return progressData.map(p => ({
+    id: p.courseId,
+    title: p.courseTitle,
+    totalChapters: p.totalChapters,
+    completedChapters: p.completedChapters,
+    progress: p.completionPercentage,
+    status: p.completionPercentage === 100 ? 'completed' 
+          : p.completionPercentage > 0 ? 'in_progress' 
+          : 'not_started'
+  }));
+};
+
 export const getRecentCourses = (progressData) => {
   return progressData
     .sort((a, b) => new Date(b.lastActivityAt) - new Date(a.lastActivityAt))
@@ -38,7 +51,7 @@ export const getRecentCourses = (progressData) => {
     .map(p => ({
       id: p.courseId,
       title: p.courseTitle,
-      progress: p.progressPercentage,
+      progress: p.completionPercentage,
       chaptersCompleted: p.completedChapters,
       totalChapters: p.totalChapters,
       lastAccessed: formatLastAccessed(p.lastActivityAt),
@@ -48,7 +61,7 @@ export const getRecentCourses = (progressData) => {
 
 export const getUpcomingTasks = (progressData) => {
   return progressData
-    .filter(p => p.progressPercentage > 0 && p.progressPercentage < 100)
+    .filter(p => p.completionPercentage > 0 && p.completionPercentage < 100)
     .slice(0, 4)
     .map((p, index) => {
       const nextChapter = p.completedChapters + 1;
@@ -67,7 +80,7 @@ export const calculateStats = (progressData) => {
   const completedChapters = progressData?.reduce((sum, p) => sum + p.completedChapters, 0) || 0;
   const totalChapters = progressData?.reduce((sum, p) => sum + p.totalChapters, 0) || 0;
   const avgProgress = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
-  const certificates = progressData?.filter(p => p.progressPercentage === 100).length || 0;
+  const certificates = progressData?.filter(p => p.completionPercentage === 100).length || 0;
   const hours = Math.round(completedChapters * 0.5); // Estimate 30 min per chapter
 
   return {
