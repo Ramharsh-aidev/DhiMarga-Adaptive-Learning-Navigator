@@ -569,18 +569,36 @@ export const NavigatorProvider = ({ children }) => {
   const exposedState = {
     paths,
     activePathId,
-    goal: activePathDetail ? { targetRole: activePathDetail.targetRole, deadlineWeeks: activePathDetail.deadlineWeeks, hoursPerWeek: activePathDetail.hoursPerWeek, contentMode: activePathDetail.contentMode } : null,
+    goal: activePathDetail ? { 
+      targetRole: activePathDetail.targetRole, 
+      deadlineWeeks: activePathDetail.deadlineWeeks, 
+      hoursPerWeek: activePathDetail.hoursPerWeek, 
+      contentMode: activePathDetail.contentMode,
+      knownSkills: activePathDetail.knownSkills || []
+    } : null,
     pathStatus: activePathDetail?.status || activePathDetail?.pathStatus || 'planning',
     currentPath: projectedPath, // Now uses the drafted projection!
     capabilityGraph: capabilityGraph,
-    learnerState: (projectedPath || []).reduce((acc, n) => {
-      let derivedStatus = 'current';
-      if (n.status === 'completed') derivedStatus = 'verified';
-      else if (n.status === 'gap') derivedStatus = 'gap';
-      else if (n.status === 'skipped') derivedStatus = 'skipped';
-      acc[n.skillId] = { status: derivedStatus, masteryScore: n.masteryScore };
-      return acc;
-    }, {}),
+    learnerState: (() => {
+      const stateMap = (projectedPath || []).reduce((acc, n) => {
+        let derivedStatus = 'current';
+        if (n.status === 'completed') derivedStatus = 'verified';
+        else if (n.status === 'gap') derivedStatus = 'gap';
+        else if (n.status === 'skipped') derivedStatus = 'skipped';
+        acc[n.skillId] = { status: derivedStatus, masteryScore: n.masteryScore };
+        return acc;
+      }, {});
+      
+      // Inject known skills as verified so they appear correctly in Mind Map
+      if (activePathDetail?.knownSkills) {
+        activePathDetail.knownSkills.forEach(skillId => {
+          if (!stateMap[skillId]) {
+            stateMap[skillId] = { status: 'verified', masteryScore: 100 };
+          }
+        });
+      }
+      return stateMap;
+    })(),
     milestones: activePathDetail?.milestones || [],
     chatHistory: uiState.chatHistory || [],
     canvasEdits: uiState.canvasEdits || [],

@@ -172,11 +172,26 @@ const MindMapNode = ({ node, isRoot = false }) => {
   );
 };
 
-const buildDepTree = (graph, goalRole) => {
+const buildDepTree = (graph, currentPath, goalRole) => {
   if (!graph) return null;
   
-  const nodes = graph.nodes;
-  const roots = Object.values(nodes).filter(n => n.prerequisites.length === 0);
+  const nodes = { ...graph.nodes };
+  
+  if (currentPath) {
+    currentPath.forEach(pathNode => {
+      if (!nodes[pathNode.skillId] && pathNode.status !== 'skipped') {
+        nodes[pathNode.skillId] = {
+          id: pathNode.skillId,
+          label: pathNode.label || pathNode.skillId,
+          prerequisites: [],
+          unlocks: [],
+          isUserAdded: true
+        };
+      }
+    });
+  }
+
+  const roots = Object.values(nodes).filter(n => !n.prerequisites || n.prerequisites.length === 0);
   
   const visited = new Set();
   
@@ -226,8 +241,8 @@ const MindMap = () => {
   
   const treeData = useMemo(() => {
     if (!state.capabilityGraph || state.capabilityGraph.error) return null;
-    return buildDepTree(state.capabilityGraph, state.goal?.targetRole?.replace('_', ' '));
-  }, [state.capabilityGraph, state.goal]);
+    return buildDepTree(state.capabilityGraph, state.currentPath, state.goal?.targetRole?.replace('_', ' '));
+  }, [state.capabilityGraph, state.currentPath, state.goal]);
 
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   
