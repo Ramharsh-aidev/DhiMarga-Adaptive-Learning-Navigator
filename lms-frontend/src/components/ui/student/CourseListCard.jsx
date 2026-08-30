@@ -6,10 +6,10 @@ import Button from '../../common/Button';
 
 const CourseListCard = ({ course, onClick }) => {
   const getStatusBadge = () => {
-    if (course.progressPercentage === 100) {
+    if (course.completionPercentage === 100) {
       return <Badge variant="success" leftIcon={<Award size={14} />}>Completed</Badge>;
     }
-    if (course.progressPercentage > 0) {
+    if (course.completionPercentage > 0) {
       return <Badge variant="warning" leftIcon={<Clock size={14} />}>In Progress</Badge>;
     }
     return <Badge variant="secondary">Not Started</Badge>;
@@ -40,9 +40,11 @@ const CourseListCard = ({ course, onClick }) => {
             {getStatusBadge()}
           </div>
 
-          <p className="text-sm text-gray-600 mb-3">
-            <span className="font-medium">Mentor:</span> {course.mentorName}
-          </p>
+          {course.mentorName && (
+            <p className="text-sm text-gray-600 mb-3">
+              <span className="font-medium">Mentor:</span> {course.mentorName}
+            </p>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
@@ -50,21 +52,21 @@ const CourseListCard = ({ course, onClick }) => {
                 {course.completedChapters} of {course.totalChapters} chapters completed
               </span>
               <span className="font-semibold text-indigo-600">
-                {Math.round(course.progressPercentage)}%
+                {Math.round(course.completionPercentage)}%
               </span>
             </div>
             <ProgressBar 
-              progress={course.progressPercentage} 
+              progress={course.completionPercentage} 
               size="sm"
             />
           </div>
 
           <div className="flex items-center justify-between mt-4">
             <span className="text-xs text-gray-500">
-              Last activity: {new Date(course.lastActivityAt).toLocaleDateString()}
+              {course.lastActivityAt ? `Last activity: ${new Date(course.lastActivityAt).toLocaleDateString()}` : ''}
             </span>
             <Button variant="ghost" size="sm">
-              {course.progressPercentage === 100 ? 'View Certificate' : 'Continue Learning'}
+              {course.completionPercentage === 100 ? 'View Certificate' : 'Continue Learning'}
             </Button>
           </div>
         </div>

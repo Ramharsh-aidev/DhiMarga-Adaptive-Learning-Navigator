@@ -8,12 +8,12 @@ const CourseHeader = ({ course, onViewCertificate }) => {
     courseTitle,
     courseThumbnailUrl,
     mentorName,
-    progressPercentage,
+    completionPercentage,
     totalChapters,
     completedChapters
   } = course;
 
-  const isCompleted = progressPercentage === 100;
+  const isCompleted = completionPercentage === 100;
 
   // Generate thumbnail from course title if not available
   const getThumbnail = (title) => {
@@ -85,10 +85,10 @@ const CourseHeader = ({ course, onViewCertificate }) => {
                 Course Progress
               </span>
               <span className="font-semibold text-indigo-600">
-                {progressPercentage}%
+                {completionPercentage}%
               </span>
             </div>
-            <ProgressBar value={progressPercentage} />
+            <ProgressBar value={completionPercentage} />
           </div>
 
           {/* Certificate Button */}

@@ -4,10 +4,13 @@ import Badge from '../../common/Badge';
 import Button from '../../common/Button';
 
 const ChapterItem = ({ chapter, isLocked, onClick }) => {
-  const { title, description, orderIndex, completed } = chapter;
+  const { chapterTitle, title, description, sequenceOrder, orderIndex, isCompleted, completed } = chapter;
+  const displayTitle = chapterTitle || title;
+  const displayOrder = sequenceOrder || orderIndex;
+  const isDone = isCompleted !== undefined ? isCompleted : completed;
 
   const getStatusBadge = () => {
-    if (completed) {
+    if (isDone) {
       return (
         <Badge variant="success" className="flex items-center gap-1">
           <CheckCircle2 className="w-3 h-3" />
@@ -38,11 +41,11 @@ const ChapterItem = ({ chapter, isLocked, onClick }) => {
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-2xl font-bold text-indigo-600">
-              {orderIndex}
+              {displayOrder}
             </span>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                {title}
+                {displayTitle}
               </h3>
               <p className="text-sm text-gray-600 line-clamp-2">
                 {description}
@@ -55,12 +58,12 @@ const ChapterItem = ({ chapter, isLocked, onClick }) => {
           {getStatusBadge()}
           {!isLocked && (
             <Button
-              variant={completed ? 'outline' : 'primary'}
+              variant={isDone ? 'outline' : 'primary'}
               size="sm"
-              leftIcon={completed ? <CheckCircle2 className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              leftIcon={isDone ? <CheckCircle2 className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               onClick={onClick}
             >
-              {completed ? 'Rewatch' : 'Watch'}
+              {isDone ? 'Rewatch' : 'Watch'}
             </Button>
           )}
         </div>

@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
 
 const ProgressBar = ({
-  value = 0,
+  value,
+  progress,
   max = 100,
   size = 'md',
   variant = 'gradient',
@@ -10,7 +11,8 @@ const ProgressBar = ({
   animated = true,
   className = ''
 }) => {
-  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+  const finalValue = value !== undefined ? value : (progress || 0);
+  const percentage = Math.min(Math.max((finalValue / max) * 100, 0), 100);
 
   const heights = {
     sm: 'h-2',

@@ -29,7 +29,7 @@ const CertificateCard = ({ certificate, onDownload, onView }) => {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900 mb-1">
-                  {certificate.courseName}
+                  {certificate.courseTitle}
                 </h3>
                 <Badge variant="success" className="flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" />
@@ -43,14 +43,14 @@ const CertificateCard = ({ certificate, onDownload, onView }) => {
           <div className="space-y-3 mb-6">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Calendar className="w-4 h-4" />
-              <span>Issued on {formatDate(certificate.issueDate)}</span>
+              <span>Issued on {formatDate(certificate.issuedAt)}</span>
             </div>
             
-            {certificate.certificateCode && (
+            {certificate.id && (
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 mb-1">Certificate ID</p>
                 <p className="font-mono text-sm font-semibold text-gray-900">
-                  {certificate.certificateCode}
+                  {certificate.id}
                 </p>
               </div>
             )}
@@ -61,7 +61,7 @@ const CertificateCard = ({ certificate, onDownload, onView }) => {
             <Button
               variant="primary"
               size="md"
-              onClick={() => onDownload(certificate.id)}
+              onClick={() => onDownload(certificate)}
               className="flex-1"
             >
               <Download className="w-4 h-4 mr-2" />

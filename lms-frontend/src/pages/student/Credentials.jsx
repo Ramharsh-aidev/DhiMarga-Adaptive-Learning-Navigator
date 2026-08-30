@@ -43,15 +43,14 @@ const Credentials = () => {
     }
   };
 
-  const handleDownload = async (certificateId) => {
-    try {
-      setError(null);
-      await downloadCertificate(certificateId);
-      setSuccess('Certificate downloaded successfully!');
+  const handleDownload = (certificate) => {
+    // We already have the Cloudinary URL from the backend response
+    if (certificate?.certificateUrl) {
+      window.open(certificate.certificateUrl, '_blank');
+      setSuccess('Certificate opened in new tab!');
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      console.error('Error downloading certificate:', err);
-      setError(err.response?.data?.message || 'Failed to download certificate');
+    } else {
+      setError('Certificate URL is not available.');
     }
   };
 
@@ -61,8 +60,8 @@ const Credentials = () => {
   };
 
   const filteredCertificates = certificates.filter(cert =>
-    cert.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cert.certificateCode?.toLowerCase().includes(searchTerm.toLowerCase())
+    cert.courseTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cert.id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   const filteredBadges = badges.filter(badge => 
@@ -156,8 +155,18 @@ const Credentials = () => {
           {/* Render Badges */}
           {(activeTab === 'all' || activeTab === 'badges') && filteredBadges.map((badge) => (
             <div key={badge.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow p-6 flex flex-col items-center text-center">
-              <div className="w-24 h-24 mb-4 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 border border-slate-100 shadow-inner">
-                <img src={badge.imageUrl || "/images/certificate_stamp.jpg"} alt={badge.badgeName} className="w-full h-full object-contain" />
+              <div className="w-24 h-24 mb-4 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 border border-slate-100 shadow-inner relative">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Award className="w-12 h-12 text-violet-300" />
+                </div>
+                <img 
+                  src={(!badge.imageUrl || badge.imageUrl.includes('demo/image/upload') || badge.imageUrl === '/images/certificate_stamp.jpg') ? "invalid_url_to_trigger_error" : badge.imageUrl} 
+                  alt={badge.badgeName} 
+                  className="w-full h-full object-contain relative z-10 bg-white" 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
               </div>
               <h3 className="font-bold text-lg text-slate-800 mb-1">{badge.badgeName}</h3>
               <p className="text-sm text-slate-500 mb-4">{badge.badgeDescription}</p>
@@ -189,29 +198,13 @@ const Credentials = () => {
           title="Certificate Preview"
         >
           {selectedCertificate && (
-            <div className="p-6 text-center bg-linear-to-br from-yellow-50 to-orange-50 rounded-lg">
-              <div className="w-24 h-24 mx-auto rounded-full bg-linear-to-br from-yellow-400 to-orange-500 flex items-center justify-center mb-4">
-                <Award className="w-12 h-12 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Certificate of Completion
-              </h2>
-              <p className="text-gray-600 mb-4">This certifies that</p>
-              <p className="text-xl font-semibold text-gray-900 mb-4">
-                {selectedCertificate.studentName}
-              </p>
-              <p className="text-gray-600 mb-2">has successfully completed</p>
-              <p className="text-lg font-bold text-gray-900 mb-6">
-                {selectedCertificate.courseName}
-              </p>
-              {selectedCertificate.certificateCode && (
-                <div className="bg-white rounded-lg p-4 mb-4">
-                  <p className="text-sm text-gray-500 mb-1">Certificate ID</p>
-                  <p className="font-mono text-sm font-semibold text-gray-900">
-                    {selectedCertificate.certificateCode}
-                  </p>
-                </div>
-              )}
+            <div className="bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center">
+              <iframe 
+                src={`${selectedCertificate.certificateUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                title="Certificate PDF"
+                className="w-full"
+                style={{ height: '70vh', border: 'none' }}
+              />
             </div>
           )}
         </Modal>

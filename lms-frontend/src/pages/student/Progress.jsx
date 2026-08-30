@@ -66,9 +66,9 @@ const Progress = () => {
     
     const totalCourses = courses.length;
     const avgProgress = Math.round(
-      courses.reduce((sum, course) => sum + (course.progressPercentage || 0), 0) / totalCourses
+      courses.reduce((sum, course) => sum + (course.completionPercentage || 0), 0) / totalCourses
     );
-    const totalCompleted = courses.filter(course => course.progressPercentage === 100).length;
+    const totalCompleted = courses.filter(course => course.completionPercentage === 100).length;
     
     return { totalCourses, avgProgress, totalCompleted };
   };
@@ -169,7 +169,7 @@ const Progress = () => {
                     <div className="w-full bg-slate-200 rounded-full h-2">
                       <div
                         className="bg-indigo-600 h-2 rounded-full transition-all"
-                        style={{ width: `${course.progressPercentage}%` }}
+                        style={{ width: `${course.completionPercentage}%` }}
                       />
                     </div>
                   </button>
